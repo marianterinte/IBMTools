@@ -1,0 +1,26 @@
+# Project-local SDKs and downloaded build tooling
+/.tools/
+
+# .NET build outputs and local IDE state
+**/bin/
+**/obj/
+/.vs/
+/.idea/
+*.user
+*.suo
+
+# Web build outputs and local caches
+**/node_modules/
+**/dist/
+**/.vite/
+**/coverage/
+
+# Runtime and local configuration; never commit credentials or artifacts
+/.local/
+/.data/
+**/.env
+**/.env.*
+!**/.env.example
+*.pfx
+*.p12
+*.key
