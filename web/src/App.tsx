@@ -1,6 +1,7 @@
 // Spec: Documentation/dev-prism-ai-specs/03_UI_UX_SPEC.md.
 // Public first-run shell: report local startup without exposing project content.
 import { useEffect, useState } from 'react'
+import { LocalPairing } from './LocalPairing'
 import './App.css'
 
 type LocalStatus = 'checking' | 'scaffold' | 'unavailable'
@@ -69,7 +70,8 @@ export default function App() {
           <p role="status">{statusLabel[status]}</p>
           <button type="button" onClick={recheck} disabled={status === 'checking'}>Check status</button>
         </div>
-        <p className="note">Project setup and remote provider connections are not available in this build. No provider has been contacted.</p>
+        <LocalPairing />
+        <p className="note">Remote provider connections are not available in this build. No provider has been contacted.</p>
       </section>
     </main>
   )
