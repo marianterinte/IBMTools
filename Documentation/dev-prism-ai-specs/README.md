@@ -1,6 +1,6 @@
 # DEV PRISM AI — implementation specification pack
 
-**Version:** 1.0 | **Date:** 2026-11-25 | **Status:** proposed baseline, ready for gated implementation
+**Version:** 1.1 | **Date:** 2026-11-25 | **Status:** expanded design baseline; provider/host proofs and implementation pending
 
 **Project Resource Intelligence & Synchronization Management**
 
@@ -10,7 +10,7 @@ DEV PRISM AI is a local-first engineering command center that unifies Azure DevO
 
 ## How to use this pack
 
-Copy the contents to `docs/spec/` in the new `dev-prism-ai` repository. Start the implementation agent with [AGENTS.md](AGENTS.md) (copy to repository root and adjust relative links to `docs/spec/` if needed) and [00_START_HERE.md](00_START_HERE.md). Do not concatenate the entire pack into every prompt. The roadmap provides mandatory reading per task group. The specifications are in English for consistent technical nomenclature and easier agent use. UI defaults to English.
+Start with [00_START_HERE.md](00_START_HERE.md), [01_PRODUCT_AND_SCOPE.md](01_PRODUCT_AND_SCOPE.md) and [18_TRACEABILITY_AND_DECISIONS.md](18_TRACEABILITY_AND_DECISIONS.md). For the Local MVP, read the `Local MVP` sections first; older broader design sections describe later phases. When implementation is authorized, use [AGENTS.md](AGENTS.md) and [14_IMPLEMENTATION_ROADMAP.md](14_IMPLEMENTATION_ROADMAP.md) to select the active group. The specifications and UI are in English for consistent terminology. Design examples and later-stage contracts are not completed features.
 
 | File | Purpose |
 |---|---|
@@ -39,14 +39,14 @@ Copy the contents to `docs/spec/` in the new `dev-prism-ai` repository. Start th
 
 - DEV PRISM AI is a software-project control plane, not a new IDE, generic prompt scorer, or a new coding engine. Its core is a read model plus evidence-backed change plans, not a chat history RAG.
 - Feature Explorer is the primary experience. Show real work items, selected Figma frames, code references, docs, decisions, tests, relations and freshness together. Browse without any model calls.
-- Real integration for the demonstration: Azure DevOps (Boards + Wiki + Repos), Figma read/preview, local Git, PostgreSQL, one provider, one existing CLI coding engine. Figma write is capability-gated; Atlassian is an extension, not a prerequisite.
-- Use typed adapters/REST for synchronized data; MCP for approved model-mediated actions, with explicit alternatives when tools lack safe preconditions. Discover actual capabilities, do not assume all providers can write.
-- .NET 10 LTS / ASP.NET Core, React + TypeScript + Vite, PostgreSQL, EF Core, SignalR, React Flow, Git, Docker-based isolated execution, optional pgvector after benchmark. No Azure hosting or Azure OpenAI dependency. One local modular monolith; no microservices.
-- Implement a deterministic workflow scheduler with durable state; start with OpenCode adapter only if compatibility spike passes, otherwise use Codex if authorized. Native coding agent is not in scope. Roo Code is a possible tool for building DEV PRISM AI, not a required runtime dependency.
+- **Local MVP:** DEV PRISM AI and PostgreSQL run locally; Azure DevOps Boards and Figma are real online services read via real remote MCP. Show stable identity, source, freshness, immutable snapshots, local feature links and approved decisions after restart. Wiki, Repos and rendered Figma previews are separate companion capabilities; prove them independently.
+- **No silent fallback:** typed remote MCP adapters do not use an LLM for import. Only an explicit owner-approved auxiliary REST route is permitted, with separate provenance; never replace a required core MCP read with it.
+- **MVP stack:** .NET 10 LTS / ASP.NET Core Minimal API, React + TypeScript + Vite, PostgreSQL + EF Core, one embedded background worker and local HTTP status polling. No Azure hosting dependency or separate web/worker runtime in packaged mode.
+- **Later:** structured Watchtower, richer graph/context, AI chat, SignalR where justified, approved writes, isolated workflow scheduler/CLI, draft PR, and conditional merge. Figma writes and provider-specific operations require separate proof. Native coding engine, pgvector and Atlassian are not MVP requirements.
 - Project Brain stores approved decisions, typed relationships and immutable source versions. Source systems remain authoritative. AI inference is proposed, not automatically trusted. Watchtower detects drift and explicit policy violations. Memory never silently overrides newer requirements.
 - Every external write is reviewed in a bounded, versioned plan. Merge to main requires human authorization and branch policy compliance. Never bypass provider permissions. No automatic cloud deployment for the MVP.
 - Measure cost and quality against a fair baseline; never claim token savings or unique market positioning without evidence.
 
 ## Specification vs implementation
 
-This is a design deliverable, not a built or tested application. External credentials, exact provider/model compatibility, live ADO/Figma capabilities, Docker host configuration and organization policy must be verified in the first implementation group. The demo uses a dedicated synthetic DishRate repository, not company data. All named task IDs and mock metrics in the examples are fixtures; live IDs come from the connector.
+This is a design deliverable, not a built or tested application. G0 verifies the remote read capabilities and host; G3 demonstrates the real import and restart scenario through PRISM. Use authorized DishRate content hosted in real test services, not company data. Named sample IDs are fixtures, never assumed provider results. The Local MVP requires manual evidence, not new FE/BE unit or integration test suites. AI/CLI and permission to write are later validation tracks.

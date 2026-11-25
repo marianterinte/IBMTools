@@ -2,9 +2,31 @@
 
 ## API conventions
 
-Base `/api/v1`; JSON camelCase, UTF-8, ISO UTC times, UUIDs as strings, enums documented strings. Project routes scoped `/projects/{projectId}` below. Use authenticated local session, CSRF protection for cookie-authenticated writes, explicit CORS only dev origin. Authorization enforced on each handler and service. OpenAPI generated and checked into contracts or generated client; do not expose secret-bearing request schemas in logs. List response `{items, nextCursor, coverage?, asOf?}`, max page 100; stable sort + opaque cursor. Return 202 + job/mission ID for asynchronous work, 201 for created local draft. `Idempotency-Key` for mutation requests; same key/different request hash -> 409. `If-Match` or explicit expected version for mutable local records. Remote target preconditions separately enforced. Use standard ProblemDetails with code/correlation ID and sanitized detail; no stack trace or tokens.
+Base `/api/v1`; JSON camelCase, UTF-8, ISO UTC times, UUIDs as strings, enums documented strings. Project routes scoped `/projects/{projectId}` below. Enforce the single-operator local boundary and project scope; there is no local session or workspace CORS. Provider authorization and external action approval are separate checks. OpenAPI generated and checked into contracts or generated client; do not expose secret-bearing request schemas in logs. List response `{items, nextCursor, coverage?, asOf?}`, max page 100; stable sort + opaque cursor. Return 202 + job/mission ID for asynchronous work, 201 for created local draft. `Idempotency-Key` for mutation requests; same key/different request hash -> 409. `If-Match` or explicit expected version for mutable local records. Remote target preconditions separately enforced. Use standard ProblemDetails with code/correlation ID and sanitized detail; no stack trace or tokens.
 
-## Endpoint inventory
+## Local MVP HTTP contract
+
+ASP.NET Core Minimal API is the only application API. The React app consumes explicit DTOs generated or checked against the versioned OpenAPI document; never import provider SDK types into the browser. Keep one canonical JSON schema per request/response. In packaged mode the API and SPA are same-origin; separate provider authentication flows do not establish an app login. Use UTC timestamps, UUID internal IDs and client-visible enum strings; `null` denotes unavailable values, not zero or a synthetic revision. Host, Origin, Fetch Metadata and project access rules follow [12_SECURITY_AND_OPERATIONS.md](12_SECURITY_AND_OPERATIONS.md#local-mvp-security-contract).
+
+The MVP implements this inventory only. Project subpaths are relative to `/api/v1/projects/{projectId}`; project endpoints return either scoped results or a non-disclosing `404` for inaccessible identifiers. A denied known capability is represented independently of route-level authorization.
+
+| Operation | Request and result |
+|---|---|
+| Database readiness | `GET /api/v1/health` returns only `{ "database": "ready" }` (200), or `notConfigured`, `migrationRequired` or `unreachable` (503). Connectivity and pending migrations share a three-second check budget. Does not check provider authorization, worker availability or release readiness. Vite may proxy this read-only endpoint only. |
+| List/create projects; get project | Stable project UUID + slug/name. Project data never shared across IDs. |
+| List/create/update `/connections`; disconnect | Provider profile and typed scope/target IDs, configuration version, explicit change intent, no arbitrary tool names, headers or endpoints. Return capabilities, redacted approved scope, authorization state and last observed health; never credentials or signed links. Disconnect requires confirmation. |
+| `POST /connections/{id}/probe` and `/connections/{id}/sync` | Expected config version; sync reads the configured selection only. Accept the request as `202` with run ID and status URL after persistence; return the existing run for a repeated active identical request. Reject stale version or `SYNC_BUSY` where the single worker is occupied by another connection. |
+| `GET /sync-runs/{id}` and `GET /sync-runs` | Scoped run status/history; state, timestamps, requested/observed target counts, result counts, per-capability coverage and safe reason codes; include `retryAt` when supplied. Reading status is a local DB operation. |
+| `GET /resources`, resource detail, `/versions`, `/diff`, `/preview` | Cached list/detail and versions. Optional filters: kind, feature, text, cursor; cap page size at 100. Exact immutable IDs for diff. Preview serves only authorized cached media; unavailable means no image, never an implicit provider fetch. |
+| List/create `/features`; get a feature and its grouped `/resources` | Feature key/name, differently labeled resource groups including coverage, summaries of local decisions, latest observations and changes. Use optimistic versioning for edits. |
+| Add/remove typed feature links | Target an existing resource within the same project; include observed version for evidence when available. Duplicate link is idempotent; unlink never deletes the resource/version. |
+| List/draft/approve/supersede `/decisions` | Draft includes feature scope, statement, rationale and evidence references. Approval specifies draft version and expected baseline; server uses its fixed local operator identity as actor and returns approved version/reference. No external write is associated with this operation. |
+
+**Field-level contracts:** Resource summaries carry resource ID, kind, title, original URL if permitted, latest immutable version ID, observed time, access/coverage and transport (`RemoteMcp`, `Rest`, or `Fixture`, plus `Manual` for local-only evidence). Provider revision, when present, is a separate nullable string. Run outcomes distinguish job state from per-capability access and health; a hub event or percent is not needed. Public problem codes add `SYNC_BUSY`, `CONNECTION_CHANGED`, `REAUTH_REQUIRED`, `SOURCE_ACCESS_DENIED`, and `PREVIEW_UNAVAILABLE` where applicable. Provider failure after a `202` belongs in the run result, not a retrofit of the acceptance response. Use explicit concurrency tokens for connection and decision changes; a mismatch returns `409` and the UI refetches. Do not publish mixed provider-auth redirects as JSON errors; provider authorization initiation/callback is a separate vetted browser flow.
+
+**Client refresh policy:** poll a queued/running run roughly every two seconds while its view is active (bounded backoff after transient local failure). Stop on terminal state. On reconnect or return to the tab, fetch current local state, then invalidate only the affected project, connection, feature and resource queries. App reload does not re-send the mutation or trigger import. SignalR and replay are post-MVP.
+
+## Extended endpoint inventory (post-MVP where not listed above)
 
 Unless stated, paths relative to `/api/v1/projects/{projectId}`.
 
@@ -76,9 +98,9 @@ Push/PR/merge and policy promotion use approved typed plan continuations, not ar
 }
 ```
 
-Example approval: `{planId:"<uuid>",planHash:"sha256:...",selectedStepKeys:["ado","wiki"],intent:"Approve exact external changes"}`. Actor comes from authenticated session; never client supplied. Server validates dependencies, scope, freshness and hash. Start returns `{missionId,jobId,state:"Queued"}` not success claim.
+Example approval: `{planId:"<uuid>",planHash:"sha256:...",selectedStepKeys:["ado","wiki"],intent:"Approve exact external changes"}`. Actor is assigned by the server under the approved deployment and authorization model; never client supplied. A local operator identity is not authorization to write to a provider. Server validates dependencies, scope, freshness and hash. Start returns `{missionId,jobId,state:"Queued"}` not success claim.
 
-## SignalR and durable events
+## SignalR and durable events (post-MVP)
 
 Hub `/hubs/project-events`. Authenticate connection; subscribe only authorized project and optional mission. Event envelope `{schemaVersion:1,sequence:123,eventId,projectId,entityType,entityId,type,occurredAt,correlationId,payload}`. Types: `sync.started`, `sync.progress`, `sync.completed`, `resource.changed`, `connection.healthChanged`, `edge.reviewed`, `finding.changed`, `decision.changed`, `chat.messageDelta`, `chat.completed`, `plan.created`, `approval.granted`, `mission.stateChanged`, `task.stateChanged`, `agent.log`, `agent.usage`, `action.stateChanged`, `check.completed`, `preview.stateChanged`. Durable state changes persisted; transient text deltas may be non-durable but final message persisted, no lost final state. Logs separate sequence per run and bounded; avoid huge payloads. UI on reconnect calls replay after last durable sequence, dedupes by event ID, refetches impacted query cache. If retention gap, return reset-required and re-fetch full state. Delivery at least once, not exact once. Never broadcast credentials/raw prompt/private content to another project.
 

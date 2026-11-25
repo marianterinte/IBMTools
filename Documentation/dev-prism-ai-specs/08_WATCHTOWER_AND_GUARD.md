@@ -1,5 +1,7 @@
 # 08 — Watchtower and Memory Guard
 
+This specification starts at G4 and extends into later action/merge stages. Local MVP renders observed snapshot changes and missing coverage only; it does not certify drift, infer affected resources or run policy gates.
+
 ## Responsibilities
 
 Watchtower detects source changes and maps affected feature graph. Memory Guard runs checks at planning and integration/pre-merge. They share findings and evidence, not separate conflicting truth stores. Aim: show actionable inconsistencies, not automatically judge everything. Deterministic checks are reproducible; semantic checks are candidate findings pending evidence/human review.

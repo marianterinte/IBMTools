@@ -4,7 +4,11 @@
 
 DishRate is a small target application, not part of DEV PRISM AI's core backend. It gives a reproducible non-confidential scenario for ADO/Figma/Wiki/Git linking, real code execution, rule evolution and cross-source drift. It may later be deployed publicly, but MVP preview is local. Keep a separate Git repository and separate PostgreSQL database/credentials. DEV PRISM AI must work on other registered repos without DishRate-specific logic; typed rating policy checker is a demonstrative policy plugin, not hardcoded core behavior.
 
-## Target app scope
+## Local MVP source preparation
+
+For the first presentation, DishRate means dedicated synthetic artifacts in real authorized online services, not a required runnable target app. Prepare a Boards item with visible editable acceptance criteria and a Figma frame with explicit rating annotations. Have one normal revision and one planned change in the same work item; retain the authorized original links. Optional: an ADO Wiki rule page, a repo commit reference and a rendered Figma preview if those capabilities are proven. No employer assets, remote writes from PRISM, CLI, seed deployment or fixture-only source can satisfy the Local MVP gate. Use the walkthrough in [02_USER_FLOWS_AND_DEMO.md](02_USER_FLOWS_AND_DEMO.md#local-mvp-presentation-810-minute-rehearsal-target). The implementation reference below belongs to later phases.
+
+## Target app scope (post-MVP)
 
 React/TypeScript/Vite + ASP.NET Core Web API + EF Core/PostgreSQL. Minimal page for browsing restaurants, list dishes, detail, submit/edit own rating, leaderboard, owner review export later. Use synthetic seed data and preseeded demo identities through a clearly labeled local-only authentication fixture. No public deployment with fake auth; production auth, file upload moderation, privacy and abuse prevention require separate work. Optional photo is seed asset, no upload MVP. Local preview via approved Docker Compose profile; `GET /health` verifies readiness. Pin toolchain and package locks in seed. Use accessible star/radio control, keyboard support, clear validation, loading/error states.
 

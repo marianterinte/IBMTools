@@ -9,7 +9,7 @@ Local browser/operator, control-plane API and DB, external ADO/Figma/AI provider
 | Prompt injection from docs/tickets/code | data delimiters, tool allowlist, no model approval, schema validation, scoped refs, independent policy gates |
 | Secret exfiltration | OS secret store, no plain DB/logs/prompt, scoped short-lived credentials, redaction, no broad environment inheritance |
 | Host access from generated code | separate sandbox, nonroot, no host mounts/daemon socket/privileged mode, restricted egress and resource caps |
-| Cross-project leakage | auth + project scope at API/service/DB, project-bound connections, isolation tests |
+| Cross-project leakage | project scope at API/service/DB, project-bound connections, scoped access verification |
 | SSRF/MCP abuse | explicit endpoint allowlist, DNS/IP policy, no unapproved redirects, no arbitrary URLs from model |
 | Lost update / duplicate write | approval hash, remote version checks, action journal, reconciliation before retry |
 | Malicious repo hooks/config | controlled Git runner, disable hooks, safe config, no untrusted git aliases, path validation |
@@ -17,9 +17,17 @@ Local browser/operator, control-plane API and DB, external ADO/Figma/AI provider
 | Supply-chain risk | pinned deps/images, lockfiles, approved package registry, scan where available, no arbitrary install from ticket |
 | False status | independent checks, actual receipts/versions, no simulated data in live mode |
 
-## Local authentication
+## Local MVP security contract
 
-Bind API and DB to loopback or internal network only; do not accept public ingress. Use authenticated local session established through explicit first-run pairing/bootstrap secret, secure cookie or documented local token scheme with no URL tokens, rotating session, CSRF defense on writes, origin/Host validation against DNS rebinding. Dev CORS allow only actual local web origin, never wildcard with credentials. Authorize project owner on every endpoint including SignalR and media. Session secrets not persisted in browser localStorage. For remote/multiuser later redesign with OIDC/RBAC/tenant isolation. Read-only mode if no configured operator. No reliance on front-end button hiding.
+- **Local boundary:** trusted single-operator workstation only. The packaged app checks loopback peer, HTTPS and Host `localhost:5081`. API and media responses use `Cache-Control: no-store`. Refuse requests with foreign Origin or foreign Fetch Metadata; mutations require the exact `https://localhost:5081` Origin. Native local GET/HEAD may omit Origin. Only the sanitized read-only readiness endpoint has a narrow Vite proxy exception; no workspace CORS. There is no local login, pairing, authentication cookie or session. The server assigns the fixed local operator identity for record continuity; this does not authenticate or isolate OS users or processes that can issue local requests.
+- **Provider boundary:** backend owns approved provider profiles and MCP egress. Preserve identity and scope on every read; accept no arbitrary tool/URI input from the UI or imported content. Use only the supported delegated flow and registered redirect from G0. Where OAuth applies, bind callback state to a short-lived connection/session attempt, use PKCE when supported/required, verify the result and reject expired or repeated callbacks. Refresh credentials server-side and store in OS vault (Windows Credential Manager on supported hosts) or use session-only credentials if the vault is unavailable. Do not persist raw tokens in Postgres, logs, UI, request traces or browser storage. No unauthorized account or source can be used to satisfy a demo gate.
+- **Media and rendering:** sanitize source text/Markdown and disable raw HTML. Do not execute tools or embedded content found in results; no provider HTML embeds or generic URL proxy. Display only validated, size-limited raster preview or a placeholder, served by an authorized local endpoint. Independently allowlist any approved asset host and validate response type and redirect policy; never forward MCP credentials to an asset host. Do not retain or expose expiring signed URLs. Protect media/detail responses from browser persistence and keep project-scoped client memory disposable.
+- **Visibility:** `Offline`, timeout and `Rate Limited` preserve readable last-known permitted cache with timestamp. An expired or invalid connection requiring reauthentication suppresses the affected connection content while access cannot be confirmed. A confirmed denied artifact suppresses that artifact, history, preview, search results and derived evidence immediately; whole-scope errors apply at the connection scope. Operator disconnect cancels eligible runs, invalidates the connection generation, revokes local credential access and suppresses cached payloads; keep only permitted minimal audit details. Reconnect only exposes content for targets validated by a new successful scoped read. Remote revocation is detected on explicit provider reads in MVP; no claim of instant detection without them.
+- **Operations:** package local startup instructions, migrations, DB backup paths and safe reset of local synthetic data. Startup must not trigger provider calls or purge artifacts by default; show a useful DB readiness error and report a provider vault failure separately. Dev Vite readiness is not workspace access. Later execution sandbox, CLI secrets, merge and production deployment requirements do not belong to this release gate.
+
+## Local authentication and later deployment notes
+
+Enforce project scope and provider visibility server-side on every applicable endpoint, media response and later event subscription. Do not rely on UI button hiding or browser-only validation. For remote or team use, redesign identity and isolation (e.g. OIDC, RBAC and tenancy) rather than expanding the local trust boundary. Session secrets never persist in browser localStorage.
 
 ## Secrets and provider connections
 
@@ -37,18 +45,13 @@ Read scope consent at connection; writes require exact approved plan. Approval e
 
 ## Local setup and configuration
 
-Prereqs: supported .NET SDK, Node LTS, Git, PostgreSQL via Compose, Docker/VM sandbox, validated CLI, authorized provider credentials, demo ADO/Figma. Bootstrap script checks versions, ports and paths; fail with actionable instructions. Example `.env.example` placeholders only:
+Prereqs: pinned .NET SDK and Node, Git, and dedicated PostgreSQL 17 (native or Compose). Provider reads additionally require authorized synthetic ADO/Figma assets and validated provider credentials. Sandbox and CLI are later-track prerequisites, not needed to browse the local app. Local PostgreSQL configuration example (placeholder only):
 
 ```dotenv
-ASPNETCORE_URLS=http://127.0.0.1:5080
-DEVPRISM_DB_HOST=127.0.0.1
-DEVPRISM_DB_PORT=55432
-DEVPRISM_DB_NAME=devprism
-DEVPRISM_WORKSPACE_ROOT=<registered directory>
-DEVPRISM_SECRET_BACKEND=<os-vault-or-session>
+ConnectionStrings__DevPrism=Host=127.0.0.1;Port=5432;Database=dev_prism_ai;Username=dev_prism_ai_app;Password=<secret>
 ```
 
-Prefer secure local origin for production; HTTP loopback dev only after risk review. Generate DB password at setup, do not ship common default. App applies migrations using explicit command; backup before destructive migrations. Suggested commands after implementation: `docker compose -f infra/compose.yaml up -d db`, `dotnet restore`, `dotnet ef database update` with documented project/startup flags, `dotnet run --project src/DevPrism.Api`, `npm ci && npm run dev` from web. Actual commands validated in G1 README, not promises that scaffold already exists. Health readiness includes DB and scheduler; connector health separate; no sensitive config on public health response.
+Generate a unique DB password at setup. Use a dedicated non-superuser database role, inject the connection string into the process from a private store and document listener/access requirements separately. Apply migrations explicitly; back up before destructive migrations. See the [repository run instructions](../../README.md). The readiness response contains only sanitized database state; scheduler and provider status are separate.
 
 ## Resilience and observability
 
