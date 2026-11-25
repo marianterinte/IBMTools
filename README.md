@@ -14,6 +14,8 @@ The application runs over loopback HTTPS and serves the packaged React UI and lo
 
 **Sync history foundation:** A real PostgreSQL migration stores scoped run status, and the HTTPS history API shows the recorded result. A synthetic local check showed that a second active run was rejected and startup marked the abandoned attempt as interrupted. This is not connector or worker execution proof; no endpoint can start a provider import yet.
 
+**Local Feature Explorer and memory:** The HTTPS walkthrough verified feature creation, search, duplicate rejection and cross-project isolation; then a versioned decision was drafted, explicitly approved and superseded. An approval against the wrong baseline was rejected. The active and superseded versions were both readable after process restart and re-pairing. Evidence is an operator statement only; imported evidence and attachment remain unavailable.
+
 ## Build and run on Windows
 
 Prerequisites: .NET SDK 10.0.404 and Node.js 24.22.3 (see the toolchain pins). Either install supported SDKs or prepend your local toolchain directories to PATH. Run from the repository root in PowerShell:

@@ -18,6 +18,9 @@ public sealed class DevPrismDbContext(DbContextOptions<DevPrismDbContext> option
     /// <summary>Returns locally authored features within a caller-supplied project scope.</summary>
     public DbSet<FeatureRecord> Features => Set<FeatureRecord>();
 
+    /// <summary>Returns local decision history scoped by project and feature.</summary>
+    public DbSet<DecisionVersionRecord> Decisions => Set<DecisionVersionRecord>();
+
     /// <summary>Defines stable IDs, provider scope keys, and optimistic concurrency.</summary>
     /// <param name="modelBuilder">The EF Core schema builder.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -50,6 +53,36 @@ public sealed class DevPrismDbContext(DbContextOptions<DevPrismDbContext> option
 
         ConfigureSyncRuns(modelBuilder);
         ConfigureFeatures(modelBuilder);
+        ConfigureDecisions(modelBuilder);
+    }
+
+    /// <summary>Constrains decision versions and keeps the approved version unique per project key.</summary>
+    private static void ConfigureDecisions(ModelBuilder modelBuilder)
+    {
+        var row = modelBuilder.Entity<DecisionVersionRecord>();
+        row.ToTable("decision_versions", table =>
+        {
+            table.HasCheckConstraint("ck_decision_revision", "revision > 0");
+            table.HasCheckConstraint("ck_decision_approval", "(state = 'Draft' AND approved_by IS NULL AND approved_at IS NULL) OR (state IN ('Approved','Superseded') AND approved_by IS NOT NULL AND approved_at IS NOT NULL)");
+        });
+        row.HasKey(value => value.Id);
+        row.Property(value => value.Id).HasColumnName("id");
+        row.Property(value => value.ProjectId).HasColumnName("project_id");
+        row.Property(value => value.FeatureId).HasColumnName("feature_id");
+        row.Property(value => value.Key).HasColumnName("key").HasMaxLength(80);
+        row.Property(value => value.Revision).HasColumnName("revision");
+        row.Property(value => value.Statement).HasColumnName("statement").HasMaxLength(2000);
+        row.Property(value => value.Rationale).HasColumnName("rationale").HasMaxLength(2000);
+        row.Property(value => value.AuthoredBy).HasColumnName("authored_by");
+        row.Property(value => value.CreatedAt).HasColumnName("created_at");
+        row.Property(value => value.State).HasColumnName("state").HasConversion<string>().HasMaxLength(16).IsConcurrencyToken();
+        row.Property(value => value.ApprovedBy).HasColumnName("approved_by");
+        row.Property(value => value.ApprovedAt).HasColumnName("approved_at");
+        row.HasOne<FeatureRecord>().WithMany().HasForeignKey(value => new { value.ProjectId, value.FeatureId })
+            .HasPrincipalKey(value => new { value.ProjectId, value.Id }).OnDelete(DeleteBehavior.Restrict);
+        row.HasIndex(value => new { value.ProjectId, value.Key, value.Revision }).IsUnique();
+        row.HasIndex(value => new { value.ProjectId, value.Key, value.State }).IsUnique()
+            .HasFilter("state IN ('Draft','Approved')");
     }
 
     /// <summary>Keeps feature identity and keys scoped to their project.</summary>

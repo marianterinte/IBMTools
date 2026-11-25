@@ -63,6 +63,7 @@ var api = app.MapGroup("/api/v1");
 api.MapLocalAuth();
 api.MapProjects();
 api.MapFeatures();
+api.MapDecisions();
 api.MapSyncRuns();
 app.MapOpenApi("/api/openapi/{documentName}.json").RequireAuthorization();
 // The process can answer HTTP before the database and release prerequisites exist.

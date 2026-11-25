@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { DecisionMemory } from './DecisionMemory'
 
 type Feature = { id: string; key: string; name: string; description: string; version: number }
 type FeatureList = { items: Feature[]; truncated: boolean }
@@ -25,7 +26,7 @@ export function FeatureWorkspace({ projectId, featureId, csrfToken }: {
   const page = `/projects/${projectId}/features`
   const api = `/api/v1${page}`
   return featureId
-    ? <FeatureDetail projectId={projectId} featureId={featureId} page={page} api={api} />
+    ? <FeatureDetail projectId={projectId} featureId={featureId} page={page} api={api} csrfToken={csrfToken} />
     : <FeatureListView key={projectId} projectId={projectId} page={page} api={api} csrfToken={csrfToken} />
 }
 
@@ -99,8 +100,8 @@ function FeatureListView({ projectId, page, api, csrfToken }: {
 }
 
 /** Opens a persisted feature and distinguishes missing import support from an empty source. */
-function FeatureDetail({ projectId, featureId, page, api }: {
-  projectId: string; featureId: string; page: string; api: string
+function FeatureDetail({ projectId, featureId, page, api, csrfToken }: {
+  projectId: string; featureId: string; page: string; api: string; csrfToken: string
 }) {
   const feature = useQuery({
     queryKey: ['project', projectId, 'features', 'detail', featureId],
@@ -117,6 +118,7 @@ function FeatureDetail({ projectId, featureId, page, api }: {
           <p>{feature.data.key} · Local revision {feature.data.version}</p>
           {feature.data.description ? <p>{feature.data.description}</p> : null}
           <p>Remote source coverage is not yet verified. No imported artifact is implied by this feature.</p>
+          <DecisionMemory key={featureId} projectId={projectId} featureId={featureId} csrfToken={csrfToken} />
         </>
       ) : null}
     </section>

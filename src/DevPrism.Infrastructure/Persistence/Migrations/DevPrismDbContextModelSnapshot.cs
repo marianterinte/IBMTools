@@ -67,6 +67,85 @@ namespace DevPrism.Infrastructure.Persistence.Migrations
                     b.ToTable("connections", (string)null);
                 });
 
+            modelBuilder.Entity("DevPrism.Infrastructure.Persistence.DecisionVersionRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at");
+
+                    b.Property<Guid?>("ApprovedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approved_by");
+
+                    b.Property<Guid>("AuthoredBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("authored_by");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("FeatureId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("feature_id");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("key");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("Rationale")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("rationale");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision");
+
+                    b.Property<string>("State")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("state");
+
+                    b.Property<string>("Statement")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("statement");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId", "FeatureId");
+
+                    b.HasIndex("ProjectId", "Key", "Revision")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectId", "Key", "State")
+                        .IsUnique()
+                        .HasFilter("state IN ('Draft','Approved')");
+
+                    b.ToTable("decision_versions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_decision_approval", "(state = 'Draft' AND approved_by IS NULL AND approved_at IS NULL) OR (state IN ('Approved','Superseded') AND approved_by IS NOT NULL AND approved_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_decision_revision", "revision > 0");
+                        });
+                });
+
             modelBuilder.Entity("DevPrism.Infrastructure.Persistence.FeatureRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -106,8 +185,6 @@ namespace DevPrism.Infrastructure.Persistence.Migrations
                         .HasColumnName("version");
 
                     b.HasKey("Id");
-
-                    b.HasAlternateKey("ProjectId", "Id");
 
                     b.HasIndex("ProjectId", "Key")
                         .IsUnique()
@@ -239,6 +316,16 @@ namespace DevPrism.Infrastructure.Persistence.Migrations
                     b.HasOne("DevPrism.Infrastructure.Persistence.ProjectRecord", null)
                         .WithMany()
                         .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DevPrism.Infrastructure.Persistence.DecisionVersionRecord", b =>
+                {
+                    b.HasOne("DevPrism.Infrastructure.Persistence.FeatureRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "FeatureId")
+                        .HasPrincipalKey("ProjectId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
