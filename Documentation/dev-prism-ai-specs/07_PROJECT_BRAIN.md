@@ -4,7 +4,15 @@
 
 The brain is a project intelligence model built from actual versioned artifacts and approved local decisions. It is not an autonomous truth generator, a dump of chat logs, or a prerequisite to browse. Its value is transparent cross-source linking, scoped impact, decision traceability and controlled context reuse. Store graph in PostgreSQL with typed nodes/edges; recursive CTE or bounded BFS, no dedicated graph database in MVP.
 
-## Graph vocabulary
+## Local MVP: links and approved memory
+
+Project Brain starts as local feature links and versioned decisions, not a separate retrieval service or chat store. Create a feature by hand; choose imported resources visible in that project and attach them with explicit evidence. The operator may remove a local relation without modifying its provider original. Start with the `Contains` membership and evidence references; graph traversal, inferred links, model analysis and context packs are post-MVP. Basic inspection and search use the local read model without a provider request.
+
+A decision draft needs a stable key, feature scope, statement, rationale and at least one authorized evidence reference or explicit operator statement. ADO/Figma content is evidence, not authority to approve a rule. Show `Draft`, `Approved` or `Superseded`; the approval changes only local policy. Each approved statement is immutable; editing creates another draft. A later artifact update marks affected cited evidence as older, without invalidating the current approved rule automatically. If access is suppressed, hide protected excerpts while an independently authored local decision may remain visible; do not expose copied restricted text through its rationale or evidence view. Browse current and prior approved versions after restart without chat, embeddings, prompt history or a fresh provider read.
+
+Example: the operator approves BR-006 (integer rating, 1–5) using a linked work item version. The next sync shows new acceptance criteria on the same item and leaves BR-006 approved. Feature Explorer pairs the two versions and shows the evidence age; it does not certify an automated policy conflict during the MVP. The richer version-target and promotion workflow below applies to later missions only.
+
+## Graph vocabulary (post-MVP except explicit local membership)
 
 | Edge | Direction and example | Evidence |
 |---|---|---|

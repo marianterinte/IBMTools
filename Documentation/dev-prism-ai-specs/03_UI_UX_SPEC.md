@@ -4,7 +4,24 @@
 
 Desktop-first responsive application, English UI. Product identity DEV PRISM AI, small prism mark, dark default theme and optional light. Visual references from earlier concepts are inspirational, not pixel contract. Developer dashboard aesthetic: navy charcoal background #10131C, surfaces #171C29 / #202638, text #E8ECF5, muted #A5AFC2, violet #9B87F5, blue #60A5FA, green #34D399, amber #FBBF24, red #F87171. Use contrast-checked tokens; do not depend on color alone. Fonts system sans and monospace for IDs/code. Density comfortable, optional compact rows; 8px spacing grid; radius 8–12px. Keyboard accessible tabs/dialogs, visible focus, semantic headings, tooltips on icons, aria-live for event updates, no excessive animations. Respect reduced motion. Avoid progress bars when no denominator.
 
-## Shell and routes
+## Local MVP UI contract
+
+The shipped navigation is **Features**, **Connections** and **Sync history** within the selected project. Default to the feature list after pairing if a project exists; otherwise show project creation and a path to configure two provider connections. Do not render nonfunctional Chat, Missions or Graph controls in MVP. Reuse one semantic layout, breadcrumbs and a shared status component; English UI, desktop first, keyboard workable at 1280×720. Never use color alone for access, source or version states.
+
+| Screen / route | Initial and success experience | Empty, loading or failure path |
+|---|---|---|
+| Connections – `/projects/:id/connections` | One card per provider with approved scope, separate Read/Probe and Sync actions, configured targets, last attempt, last successful read and capability-level coverage. Use explicit connect/reconnect confirmation; show whether a read was actually verified. | `Not configured` links to setup. `Unverified` offers a scoped probe, not a Ready badge. `Unsupported` explains the missing capability. `Reauthentication required` offers reconnect and hides affected content. `Rate limited` shows retry time if known. Use no fake progress percent. |
+| Feature list – `/projects/:id/features` | Search by local feature name/key, open a persisted feature, start an explicit create form. List shows independent Boards/Figma coverage and last updated time, not a misleading combined success count. | First-run help distinguishes no feature from no import. Failed provider does not block navigation or creation. |
+| Feature Explorer – `/projects/:id/features/:featureId` | Header shows feature name and coverage; Overview groups Work Items, Design, Docs, Repo references and Decisions. Tabs: Overview, Decisions, Changes. Link existing resources with one picker; explicitly confirm unlink. | Distinguish `No linked items`, `Not imported`, `Unavailable` and `Hidden`. Keep successful source groups visible when another is partial. Do not let an empty tab imply a source has no artifacts. |
+| Resource detail – `/projects/:id/resources/:resourceId` | Linkable view or inspector with provider/transport, permitted original URL, latest observation, native revision if supplied, content, Versions and Diff. Use the exact version ID for history and deep links. Show Figma context without requiring the preview. | Unchanged resync keeps the same snapshot. `Revision not supplied` uses local capture timestamp, not a substitute rev. Missing preview gets a placeholder and original link; no lazy remote call. Protected data disappears on local denial or disconnect; use a generic inaccessible state. |
+| Decision editor – feature Decisions tab | Start a draft with key, statement, rationale and evidence; show scope and current approved version. Explicit approval and replacement dialogs explain that only local memory changes. | Keep draft on local validation error. A version conflict reloads the approved baseline and keeps unsent input for review, never auto-overwrites. Older or hidden evidence is labeled without displaying restricted text. |
+| Sync history – `/projects/:id/sync` | Show run ID, per-source targets observed, imported/updated/unchanged counts and latest outcome. Poll only the active local run and refresh scoped data after completion. | Separate `Partial`, `Failed`, and `Interrupted`; show reason, last successful read and a deliberate retry action. Restart never displays a running spinner unless a current run actually exists. |
+
+**Presentation labels:** group provider identity (Azure DevOps / Figma), route (Remote MCP / approved REST / Fixture), and data classification (underlying synthetic demo content when applicable). Keep transport and health separate. Design assets from a real synthetic online project can truthfully have both `Remote MCP` and `Synthetic demo data` chips. The UI never changes a live source into fixtures silently.
+
+**Interaction rules:** use semantic headings/lists, labeled inputs and focus restoration, keyboard access to resource and decision controls, announced status summaries rather than every poll, relative age plus exact timestamp on inspection, and safe sanitized display of imported content. Scope navigation and data caches to the project, preserve deep links, and render errors with a concrete action. Do not load content that has been suppressed into a hidden DOM subtree or keep it in a persistent service worker cache.
+
+## Extended shell and routes (post-MVP where not listed above)
 
 Left rail 220px collapsible (project selector, Dashboard, Features, Resources, Activity, Brain, Watchtower, Missions, Chat, Settings). Top bar breadcrumb, search (Ctrl/Cmd+K), sync status, AI/provider indicator, project selector optional. Right inspector 340–420px resizable on graph/explorer. Main canvas scroll independent. On narrow viewport use drawer and stacked inspector; support 1280x720 at minimum demo resolution, target 1440x900. Persist local display preferences, not secrets. All deep links carry project scope; opening external link uses new tab and safe scheme.
 
@@ -21,6 +38,8 @@ Left rail 220px collapsible (project selector, Dashboard, Features, Resources, A
 | `/projects/:id/chat/:threadId?` | Scoped conversation and plan | Context/sources |
 | `/projects/:id/missions/:missionId` | Plan, DAG, logs, changes, preview | Node/action evidence |
 | `/projects/:id/settings` | Connections, provider, policy, budget, workspace | Test diagnostics |
+
+## Extended experience (post-MVP unless covered by the Local MVP UI contract)
 
 ## S01: project setup
 

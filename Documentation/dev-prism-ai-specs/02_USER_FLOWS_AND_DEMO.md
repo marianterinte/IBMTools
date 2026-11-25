@@ -1,6 +1,17 @@
 # 02 — User flows and demonstration
 
-## F01: setup and connection
+## Local MVP presentation (8–10 minute rehearsal target)
+
+**Preflight:** On the laptop verify local startup and prepared, authorized ADO/Figma demo assets. Have one scoped work item, one Figma frame with meaningful annotations, and two preplanned revisions of the same work item. If available, link an ADO Wiki page and an ADO Repos commit; mark preview capability separately. No IBM project, employer credentials or Internet-facing deployment of PRISM. No AI key needed.
+
+1. **00:00–02:00 — Connect.** Pair the local operator, select the DishRate project, show provider scope and perform or show the result of actual remote MCP read probes. Explain that the app/DB are local; the two services are online and the artifacts contain synthetic data.
+2. **02:00–05:00 — Import and explore.** Sync the selected sources. Open the scoped ADO work item and Figma frame in Feature Explorer, inspect provenance and observed version, open one authorized original, and link a local decision. Show auxiliary reads only if separately proven. Explain any unavailable capability without changing the definition of live.
+3. **05:00–07:00 — Observe a change.** Use the provider UI to edit only the dedicated work item (e.g. add half-star acceptance criteria); PRISM remains read-only toward providers. Resync, show previous/new snapshot and the local approved decision still intact. Repeat unchanged sync briefly if time allows. No automatic consistency verdict is implied.
+4. **07:00–10:00 — Show memory and degraded mode.** Restart PRISM; reopen the feature and its approved rule. If exercising offline browsing during rehearsal, disable the connection at the network level, not via provider disconnect (which suppresses content). Offline UI must not claim the source was checked until a read attempt occurred. If the network/demo account fails, show last permitted cache or separately labeled rehearsal evidence; this degrades the presentation, never passes a missing live gate.
+
+Capture the redacted evidence listed in [13_TESTING_AND_ACCEPTANCE.md](13_TESTING_AND_ACCEPTANCE.md#local-mvp-acceptance-run-m01m10). All flows below are retained for the expanded product; they do not gate the Local MVP.
+
+## F01: setup and connection (expanded product)
 
 1. Start local backend + database + web app. First launch authenticates local operator; show setup checklist and privacy note. Create project `DishRate`, slug and local root (choose registered path through backend allowlist), configure repo remote and default branch, approved preview profile.
 2. Choose AI provider profile: OpenAI, compatible endpoint or IBM provider if proven; supply endpoint/model/secret reference, test with minimal structured output and optional tool call. Distinguish chat model from coding engine credentials. An AI test failure must not block browsing.
@@ -45,6 +56,6 @@ Restart app and open a new chat, no prior messages loaded. Request “Export cus
 
 Cancel running mission: stop launching nodes; terminate owned processes safely; preserve commits and logs; external calls in flight become `Unknown` until reconcile. On backend restart, queued jobs rehydrate from DB, previously running jobs become `Interrupted` unless proven alive and attachable. UI replay events from cursor. Resuming starts a new attempt with current versions/approval check; never blindly rerun writes or merges. Operator may resolve Git conflicts manually in integration workspace and submit new evidence for checks; blocked graph nodes remain blocked. A stale plan must be regenerated and reapproved.
 
-## Suggested 12–18 minute presentation (timing target, not measured)
+## Expanded post-MVP presentation (12–18 minute timing target, not measured)
 
 0–2 min: problem fragmentation; show connected workspace and real source links. 2–5: one prompt to approved ADO backlog and Wiki; show receipts. 5–8: select feature and launch prepared implementation; show actual concurrent starts and worktree diffs, real preview or previously recorded live evidence if slow. 8–12: change design/criteria, sync, graph impact, review half-star cross-system plan. 12–15: restart/new chat and privacy conflict; explain versioned rule and guard. 15–18: cost/coverage, architecture, limitations and future work. Keep a prevalidated fixture replay clearly labeled if remote services unavailable; never disguise recorded/fixture data as live. Public deployment is optional after demo, not a prerequisite.

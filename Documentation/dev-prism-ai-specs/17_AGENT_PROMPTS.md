@@ -1,5 +1,7 @@
 # 17 — Runtime agent prompt contracts and implementation kickoff
 
+The runtime prompts in this document are post-MVP. The first release uses source adapters directly, with no model for discovery, reads, linking, navigation or decisions. Use the bounded kickoff below only after implementation is authorized.
+
 ## Prompt safety and structure
 
 These are templates for DEV PRISM AI's runtime, not authoritative instructions from imported artifacts. Inject only server-produced, scoped data. Keep system instructions separate from user task and retrieved data. Escape delimiters or use typed structured messages; arbitrary source text remains untrusted even inside code blocks. Model cannot authorize writes, override policy, reveal secrets or choose unapproved tools. Never require hidden chain of thought; ask for concise rationale, evidence and observable outputs. Record prompt template version and context pack hash. Avoid injecting whole conversation or provider schemas. Every output schema validated server-side; bounded retries on invalid output; failure visible.
@@ -90,22 +92,14 @@ human approval remain authoritative.
 ## Copy-ready implementation kickoff for Roo Code / other coding assistant
 
 ```text
-Implement DEV PRISM AI from the Markdown specification pack in docs/spec/.
-Read AGENTS.md, docs/spec/00_START_HERE.md, 01_PRODUCT_AND_SCOPE.md,
-04_ARCHITECTURE.md, 12_SECURITY_AND_OPERATIONS.md, 14_IMPLEMENTATION_ROADMAP.md,
-and 18_TRACEABILITY_AND_DECISIONS.md before editing.
-Inspect the current repository and execute group G0 first. Do not assume credentials,
-provider support, sandbox capability or a preexisting codebase. Do not attempt live writes
-without the owner's explicit authorization and dedicated sandbox accounts.
-Follow roadmap groups sequentially, with mandatory reading per group. For HARD/COMPLEX
-items produce a concrete breakdown, expected files/contracts, tests and failure cases.
-Use XML documentation in C# and JSDoc/TSDoc in TS; link file headers to spec/ADR;
-explain nontrivial conditions and loops in business terms. Keep comments meaningful.
-Mark [X] only for completed tasks with evidence, commands and test outcomes.
-After context compaction reread the active group and relevant specs, inspect git diff.
-Do not implement the entire vision at once: deliver usable read-only Feature Explorer first,
-then controlled actions, then safe single CLI execution, then parallel agents.
-Do not bypass security, fabricate metrics, fake live integrations, or deploy to Azure.
-If blocked on credentials/permissions, document blocker and continue independent safe work.
-At each gate summarize actual verified capabilities, limitations, changed files and test results.
+When authorized, implement only the active G0–G3 Local MVP group from the specification pack.
+Read the canonical scope, decisions, task contract and current group before editing.
+Prove required Azure DevOps Boards and Figma reads via authorized remote MCP before
+implementing provider mappings. No fixture, local MCP bridge or REST substitution qualifies.
+Use Minimal API and React/TypeScript; keep the app and read model local. No AI or external writes.
+For complex tasks record scope, contracts, failure cases and the intended local/live proof.
+Use meaningful comments and changed-path references, and preserve existing checks.
+Mark a task complete only with observable evidence. No mandatory new FE/BE test suite.
+If blocked on credentials or remote capabilities, record why; do not work around permissions.
+At each gate summarize actual verified capabilities, limitations and changed files.
 ```

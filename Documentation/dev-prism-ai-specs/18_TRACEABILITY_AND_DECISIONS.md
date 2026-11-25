@@ -58,8 +58,9 @@ ADR-01–03 and ADR-12–17 are the documentation baseline for the Local MVP. Ve
 
 | Risk | Impact | Mitigation / stop condition |
 |---|---|---|
-| IBM endpoint incompatible with CLI | coding unavailable | G0 real test, authorized alternate; keep read/action product |
-| Figma access/rate limit/custom client restrictions | partial source or no writes | scoped read, cache, manual snapshot/handoff, no false live status |
+| Remote Azure DevOps MCP or client auth unavailable | required Boards read blocked | verify the remote service and account in G0; do not substitute local MCP or REST |
+| Figma access/rate limit/custom client restrictions | required context or optional preview unavailable | scope and verify each read independently; use stale cache only for previously permitted data, never as proof of a new read |
+| Later model incompatible with CLI | coding unavailable | SP-02 before G7, authorized alternate; keep the read/action product |
 | ADO process/permissions differ | cannot create/transition/merge | discover fields, exact provider policy; no bypass; leave PR in review |
 | Agent code executes malicious behavior | host or secrets exposed | mandatory verified sandbox and least credentials; block real coding if unavailable |
 | Graph relations inaccurate | misleading impact | evidence, human review, stale/unknown, explicit link first |
