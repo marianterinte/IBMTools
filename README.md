@@ -1,6 +1,6 @@
 # DEV PRISM AI
 
-A local, feature-oriented workspace for Azure DevOps and Figma. The application and PostgreSQL run on the operator's laptop; the required provider reads use real remote MCP. See [Local MVP scope](Documentation/dev-prism-ai-specs/00_START_HERE.md) and [provider readiness](Documentation/local-mvp-g0-evidence.md).
+A local, feature-oriented workspace for Azure DevOps and Figma. The application and PostgreSQL run on the operator's laptop; the required provider reads use real remote MCP. See [Local MVP scope](Documentation/dev-prism-ai-specs/00_START_HERE.md), [provider readiness](Documentation/local-mvp-g0-evidence.md) and the [remote read runbook](Documentation/local-mvp-remote-read-runbook.md).
 
 ## Current increment
 

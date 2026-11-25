@@ -16,12 +16,14 @@ Gate: both required core reads proven remote with actual scoped provider data. K
 
 ## G1 — Local foundation and UI shell (Local MVP)
 Mandatory: 03, 04, 05, 11, 12, 13.
-- [ ] G1.1 [MEDIUM] Scaffold Minimal API modules and React/TypeScript/Vite with local same-origin packaging; pin versions and existing build/lint checks.
-- [ ] G1.2 [HARD] PostgreSQL Compose/migrations with project keys, connection config versions and explicit DB bootstrap.
+- [X] G1.1 [MEDIUM] Scaffold Minimal API modules and React/TypeScript/Vite with local same-origin packaging; pin versions and existing build/lint checks. Evidence: `8eaaf69`; Release build, web lint/type/build, verified loopback HTTPS, truthful unready status and API/media 404 behavior.
+- [X] G1.2 [HARD] PostgreSQL Compose/migrations with project keys, connection config versions and explicit DB bootstrap. Evidence: `76d275d`; first migration applied, second application was a no-op, orphan connection rejected, project survived a database restart.
 - [ ] G1.3 [HARD] Implement local pairing, sessions, Host/Origin validation, antiforgery, project scope, vault and redaction.
 - [ ] G1.4 [MEDIUM] Establish OpenAPI DTO and HTTP error contracts, auth/readiness and scope-aware query keys.
 - [ ] G1.5 [HARD] Persist bounded import jobs and interruption recovery; one local worker and status polling, no outbox/SignalR requirement.
 - [ ] G1.6 [MEDIUM] Ship feature/connection/sync navigation with truthful setup/error states and repeatable local instructions.
+
+Partial evidence: `9cb9c3a` and `97a3b5f` for local authentication and scope; `4e6fd69` for OpenAPI and navigation; `95aeaa1` for durable history and recovery. Provider vault, import execution and the complete acceptance walkthrough are still open. See the [repository evidence and setup](../../README.md).
 
 Gate: repeatable local startup, persistence, no pre-pair project data, and relevant boundary checks from M01/M09; no fake connected state.
 
@@ -41,6 +43,8 @@ Mandatory: 01, 02, 03, 05, 07, 11, 13.
 - [ ] G3.2 [MEDIUM] Show grouped resources, original links, scope/route/freshness, detail and before/after history; no automated drift claim.
 - [ ] G3.3 [HARD] Draft, approve and supersede versioned local decisions; preserve source authority, audit, and hidden-evidence semantics.
 - [ ] G3.4 [MEDIUM] Execute M01–M10 on the target laptop, capture redacted evidence and rehearse the Local MVP flow.
+
+Partial evidence: `a908caa` for local feature metadata and `fe84e37` for versioned decisions surviving process restart. These do not verify imported evidence, attachment, or the live demonstration. Required read proofs and their remaining prerequisites are listed in the [remote read runbook](../local-mvp-remote-read-runbook.md).
 
 Gate: Local MVP release requires the required acceptance checks in [13_TESTING_AND_ACCEPTANCE.md](13_TESTING_AND_ACCEPTANCE.md#local-mvp-acceptance-run-m01m10). Close missing companion capabilities explicitly rather than silently relabeling them as verified.
 

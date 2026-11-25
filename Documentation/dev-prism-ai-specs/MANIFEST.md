@@ -2,7 +2,7 @@
 
 Version 1.1 | 2026-11-25
 
-21 specification Markdown files (excluding this manifest); 65 unchecked roadmap tasks.
+21 specification Markdown files (excluding this manifest); 63 unchecked roadmap tasks.
 
 Bytes and SHA-256 are calculated on UTF-8 without BOM with LF-normalized line endings, independent of Git checkout line endings. Regenerate the table after changing a specification.
 
@@ -22,7 +22,7 @@ Bytes and SHA-256 are calculated on UTF-8 without BOM with LF-normalized line en
 | 11_API_AND_EVENTS.md | 12959 | 2b17ba8025105baac4de0ba0f4349225c1263c8066a7333735e35b3af4f7e3a6 |
 | 12_SECURITY_AND_OPERATIONS.md | 11956 | 7bc4b1fffdd239e10c2c2c471cefaa42109d7917b481ec4d55d9ab57ef95709c |
 | 13_TESTING_AND_ACCEPTANCE.md | 11502 | 2bffb81ea2c968d7d3dc96c2a71e3c628c49bca390ccc0faca4cb0404b915f14 |
-| 14_IMPLEMENTATION_ROADMAP.md | 11603 | 1a42b82448fe15d9d45ce1b222d45f14671311970a201387c5982e337a008f90 |
+| 14_IMPLEMENTATION_ROADMAP.md | 12520 | 7c464f21af91a6a1d34855ef2169b37a4cf727f220d678b1d3aac9ffee796b89 |
 | 15_DISH_RATE_REFERENCE.md | 10652 | d1c6c50ec0c03a42f4729e7db722eda9c011db9170cbf7da0bc422adf7c1cc1d |
 | 16_TECH_VALIDATION_AND_REFERENCES.md | 9111 | b42d420c23af6d4b5d376611ebade3ceb537a74827b671f664df57a7a662f8ae |
 | 17_AGENT_PROMPTS.md | 7809 | 50bdbec1f13a213daa566941cc849b958723770316bdea6bb6ce3cb6c5edfc32 |
