@@ -6,7 +6,9 @@ Desktop-first responsive application, English UI. Product identity DEV PRISM AI,
 
 ## Local MVP UI contract
 
-The shipped navigation is **Features**, **Connections** and **Sync history** within the selected project. Open the local project picker directly when PostgreSQL is ready, with no local login or pairing. Open the feature list when the operator selects a project; if no project exists, show project creation. Show database setup or connectivity guidance instead of rendering an unusable workspace. Provider setup remains separate from local access. Do not render nonfunctional Chat, Missions or Graph controls in MVP. Reuse one semantic layout, breadcrumbs and a shared status component; English UI, desktop first, keyboard workable at 1280×720. Never use color alone for access, source or version states.
+The shipped navigation is **Features**, **Connections** and **Sync history** within the selected project. Open the local project picker directly when PostgreSQL is ready, with no local login or pairing. Open the feature list when the operator selects a project; if no project exists, show project creation. Show database setup or connectivity guidance instead of rendering an unusable workspace. Provider setup remains separate from local access. Do not render nonfunctional Chat, Missions or Graph controls in MVP.
+
+**Workspace layout:** use a dark navy shell with violet accents, a left project switcher and section menu, a top bar with the current project and observed database status, and a main area with a right-hand context rail. On feature detail, the rail shows local record metadata, up to three approved decision summaries from the same feature-scoped query, and source availability. On narrower screens stack context after the main content, and move navigation above the workspace on phones. Keep a visible focus indicator, labeled controls, semantic landmarks and text labels for statuses. The visual references inform layout only; do not reproduce their mock metrics, data, branding or post-MVP controls.
 
 | Screen / route | Initial and success experience | Empty, loading or failure path |
 |---|---|---|

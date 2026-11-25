@@ -1,13 +1,26 @@
-/* Spec: Documentation/dev-prism-ai-specs/03_UI_UX_SPEC.md. */
+/* Shared visual tokens. The packaged app has no external font or icon requests. */
 :root {
-  font-family: system-ui, sans-serif;
+  font-family: 'Segoe UI', system-ui, sans-serif;
   color-scheme: dark;
-  background: #10131c;
-  color: #e8ecf5;
+  background: #0d101a;
+  color: #f0eff9;
   line-height: 1.5;
   font-synthesis: none;
+  --bg: #0d101a;
+  --surface: #161a2a;
+  --surface-low: #111523;
+  --line: #2b3046;
+  --text: #f0eff9;
+  --muted: #a8aec7;
+  --accent: #c3a9ff;
+  --good: #7ce5b6;
+  --warning: #f6c790;
+  --radius: 16px;
 }
 
-body { margin: 0; }
-button { font: inherit; }
-:focus-visible { outline: 2px solid #9b87f5; outline-offset: 4px; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; min-width: 0; }
+button, input, textarea, select { font: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid #c3a9ff; outline-offset: 3px; }
+::selection { color: #fff; background: #543682; }

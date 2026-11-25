@@ -1,17 +1,16 @@
 // Spec: Documentation/dev-prism-ai-specs/03_UI_UX_SPEC.md and 11_API_AND_EVENTS.md.
-// Routes for viewing and creating actual local projects, not provider fixtures.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type FormEvent } from 'react'
-import { Link, NavLink, Route, Routes, useNavigate, useParams } from 'react-router'
+import type { FormEvent } from 'react'
+import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router'
 import { SyncHistory } from './SyncHistory'
 import { FeatureWorkspace } from './FeatureWorkspace'
+import { ContextCard, EmptyState, Icon, PageIntro, ProviderConnections, SourceContext, WorkspaceColumns, WorkspaceFrame, type ProjectOption, type WorkspaceHealth } from './WorkspaceUi'
 
-type Project = { id: string; slug: string; name: string; version: number }
+type Project = ProjectOption & { version: number }
 type ProjectList = { items: Project[] }
 const api = '/api/v1/projects'
 const projectsKey = ['operator-projects'] as const
 
-/** Checks application status before deserializing the corresponding local project response. */
 async function readJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, { cache: 'no-store', ...init })
   if (response.status === 404) throw new Error('Project unavailable.')
@@ -21,32 +20,28 @@ async function readJson<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json()
 }
 
-/** Defines navigable project routes, for the single local workspace. */
-export function ProjectWorkspace() {
+export function ProjectWorkspace({ health }: { health: WorkspaceHealth }) {
+  const projects = useQuery({ queryKey: projectsKey, queryFn: ({ signal }) => readJson<ProjectList>(api, { signal }) })
+  const frame = { health, projects: projects.data?.items, projectsLoading: projects.isPending }
   return (
-    <section className="setup" aria-labelledby="projects-title">
-      <h2 id="projects-title">Project workspace</h2>
-      <Routes>
-        <Route path="/" element={<ProjectPicker />} />
-        <Route path="/projects" element={<ProjectPicker />} />
-        <Route path="/projects/:projectId/features/:featureId" element={<ProjectView />} />
-        <Route path="/projects/:projectId/:section?" element={<ProjectView />} />
-        <Route path="*" element={<p>Page unavailable. <Link to="/projects">Projects</Link></p>} />
-      </Routes>
-    </section>
+    <Routes>
+      <Route path="/" element={<Navigate to="/projects" replace />} />
+      <Route path="/projects" element={<WorkspaceFrame {...frame}><ProjectPicker projects={projects} /></WorkspaceFrame>} />
+      <Route path="/projects/:projectId/features/:featureId" element={<ProjectView frame={frame} />} />
+      <Route path="/projects/:projectId/:section?" element={<ProjectView frame={frame} />} />
+      <Route path="*" element={<WorkspaceFrame {...frame}>
+        <PageIntro eyebrow="Local workspace" title="Page unavailable" description="Return to the project directory to continue." action={<Link className="button button-secondary" to="/projects"><Icon name="back" /> All projects</Link>} />
+      </WorkspaceFrame>} />
+    </Routes>
   )
 }
 
-/** Lists persisted projects and provides a minimal create form. */
-function ProjectPicker() {
+function ProjectPicker({ projects }: { projects: { data?: ProjectList; isSuccess: boolean; isPending: boolean; error: Error | null } }) {
   const client = useQueryClient()
   const navigate = useNavigate()
-  const projects = useQuery({ queryKey: projectsKey, queryFn: ({ signal }) => readJson<ProjectList>(api, { signal }) })
   const create = useMutation({
     mutationFn: (fields: { name: string; slug: string }) => readJson<Project>(api, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fields),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields),
     }),
     onSuccess: async (project) => {
       await client.invalidateQueries({ queryKey: projectsKey })
@@ -54,7 +49,6 @@ function ProjectPicker() {
     },
   })
 
-  /** Submits the explicit local project fields, never an owner or provider identity. */
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const fields = new FormData(event.currentTarget)
@@ -63,49 +57,66 @@ function ProjectPicker() {
 
   return (
     <>
-      {projects.isPending ? <p role="status">Loading projects…</p> : null}
-      {projects.isError ? <p role="alert">{projects.error.message}</p> : null}
-      {projects.isSuccess ? (
-        <>
-          {projects.data.items.length ? (
-            <ul>{projects.data.items.map((p) => <li key={p.id}><Link to={`/projects/${p.id}/features`}>{p.name}</Link></li>)}</ul>
-          ) : <p>No local projects yet.</p>}
+      <PageIntro eyebrow="Workspace / Projects" title="Project" accent="workspace" description="Organize work by feature, record decisions, and see which sources are available." hero
+        action={projects.isSuccess ? <a className="button button-primary" href="#new-project"><Icon name="plus" /> New project</a> : undefined} />
+      <WorkspaceColumns context={<><SourceContext /><ContextCard title="Where data lives" icon="database"><p>Projects, features and decisions are saved in the local PostgreSQL database. Creating a project does not contact any provider.</p></ContextCard></>}>
+        <section className="panel" aria-labelledby="local-projects-title">
+          <div className="panel-heading"><span className="icon-tile"><Icon name="grid" /></span><div><h2 id="local-projects-title">Local projects</h2><p>Select a project to open its workspace.</p></div></div>
+          {projects.isPending ? <p role="status">Loading projects…</p> : null}
+          {projects.error ? <p className="notice error" role="alert">{projects.error.message}</p> : null}
+          {projects.isSuccess && !projects.data?.items.length ? <EmptyState title="No projects yet" icon="grid">Create your first project to start organizing local work.</EmptyState> : null}
+          {projects.isSuccess && projects.data?.items.length ? <ul className="entity-list" aria-label="Local projects">
+            {projects.data.items.map((project) => <li key={project.id}>
+              <Link className="entity-link" to={`/projects/${project.id}/features`}><span className="icon-tile"><Icon name="layers" /></span><span className="entity-label"><strong>{project.name}</strong><small>{project.slug}</small></span><Icon name="chevron" /></Link>
+            </li>)}
+          </ul> : null}
+        </section>
+        {projects.isSuccess ? <section className="panel" id="new-project" aria-labelledby="new-project-title" tabIndex={-1}>
+          <div className="panel-heading"><span className="icon-tile"><Icon name="plus" /></span><div><h2 id="new-project-title">Create a project</h2><p>Give the workspace a name and a short, unique slug.</p></div></div>
           <form onSubmit={submit}>
-            <div className="form-field"><label htmlFor="project-name">Project name</label><input id="project-name" name="name" required maxLength={160} /></div>
-            <div className="form-field"><label htmlFor="project-slug">Project slug</label><input id="project-slug" name="slug" required maxLength={80} placeholder="dishrate" /></div>
-            <button type="submit" disabled={create.isPending}>Create project</button>
-            {create.isError ? <p role="alert">{create.error.message}</p> : null}
+            <div className="field-grid">
+              <div className="form-field"><label htmlFor="project-name">Project name</label><input id="project-name" name="name" required maxLength={160} /></div>
+              <div className="form-field"><label htmlFor="project-slug">Project slug</label><input id="project-slug" name="slug" required maxLength={80} placeholder="e.g. dishrate" /></div>
+            </div>
+            <button type="submit" className="button button-primary" disabled={create.isPending}><Icon name="plus" />{create.isPending ? 'Creating project…' : 'Create project'}</button>
+            {create.isError ? <p className="notice error" role="alert">{create.error.message}</p> : null}
           </form>
-        </>
-      ) : null}
+        </section> : null}
+      </WorkspaceColumns>
     </>
   )
 }
 
-/** Opens one authorized project and explicitly labels sections not yet implemented. */
-function ProjectView() {
-  const { projectId, featureId, section = 'features' } = useParams()
+function ProjectView({ frame }: { frame: { health: WorkspaceHealth; projects?: ProjectOption[]; projectsLoading: boolean } }) {
+  const { projectId, featureId, section } = useParams()
   const project = useQuery({
     queryKey: ['project', projectId],
     queryFn: ({ signal }) => readJson<Project>(`${api}/${encodeURIComponent(projectId ?? '')}`, { signal }),
   })
-  if (project.isPending) return <p role="status">Loading project…</p>
-  if (project.isError) return <p role="alert">{project.error.message} <Link to="/projects">Projects</Link></p>
+  if (!project.isSuccess) return <WorkspaceFrame {...frame}>
+    <PageIntro eyebrow="Workspace / Projects" title={project.isPending ? 'Opening project…' : 'Project unavailable'} description="Only projects stored in the local workspace can be opened here." />
+    {project.isError ? <p className="notice error" role="alert">{project.error.message} <Link to="/projects">Back to projects</Link></p> : <p role="status">Loading project…</p>}
+  </WorkspaceFrame>
 
   const base = `/projects/${project.data.id}`
+  const current = featureId ? 'features' : section
+  if (!current) return <Navigate to={`${base}/features`} replace />
   return (
-    <>
-      <p><Link to="/projects">All projects</Link></p>
-      <h3>{project.data.name}</h3>
-      <nav className="workspace-nav" aria-label="Project">
-        <NavLink to={`${base}/features`}>Features</NavLink>
-        <NavLink to={`${base}/connections`}>Connections</NavLink>
-        <NavLink to={`${base}/sync`}>Sync history</NavLink>
-      </nav>
-      {section === 'features' ? <FeatureWorkspace projectId={project.data.id} featureId={featureId} /> : null}
-      {section === 'sync' ? <SyncHistory projectId={project.data.id} /> : null}
-      {section === 'connections' ? <p>No provider connection has been verified through this application.</p> : null}
-      {!['features', 'sync', 'connections'].includes(section) ? <p>Project section unavailable.</p> : null}
-    </>
+    <WorkspaceFrame {...frame} project={project.data}>
+      {current === 'features' ? <FeatureWorkspace projectId={project.data.id} featureId={featureId} /> : null}
+      {current === 'sync' ? <>
+        <PageIntro eyebrow="Project / Activity" title="Sync" accent="history" description="Review synchronization attempts recorded for this project." />
+        <WorkspaceColumns context={<><SourceContext connectionPath={`${base}/connections`} /><ContextCard title="About this history" icon="history"><p>This view reads the local attempt journal. Opening it does not start a provider operation.</p></ContextCard></>}>
+          <section className="panel" aria-labelledby="sync-attempts-title"><div className="panel-heading"><span className="icon-tile"><Icon name="history" /></span><div><h2 id="sync-attempts-title">Synchronization attempts</h2><p>Run status and timestamps, from the local database.</p></div></div><SyncHistory projectId={project.data.id} /></section>
+        </WorkspaceColumns>
+      </> : null}
+      {current === 'connections' ? <>
+        <PageIntro eyebrow="Project / Sources" title="Provider" accent="connections" description="Read availability for the sources planned for this project." />
+        <WorkspaceColumns context={<ContextCard title="Provider access" icon="info"><p>Provider authorization is separate from the local workspace. This build does not expose OAuth or import controls.</p></ContextCard>}>
+          <ProviderConnections />
+        </WorkspaceColumns>
+      </> : null}
+      {!['features', 'sync', 'connections'].includes(current) ? <PageIntro eyebrow="Project" title="Section unavailable" description="Use the workspace menu to continue." /> : null}
+    </WorkspaceFrame>
   )
 }

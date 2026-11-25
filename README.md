@@ -8,7 +8,9 @@ Open [https://localhost:5081](https://localhost:5081) after starting the package
 
 Local projects, features, versioned decision memory and a scoped sync history are persisted. Sync history is a foundation only: no provider connector or import worker is enabled. Local decision evidence is currently an operator statement. The [local OpenAPI document](https://localhost:5081/api/openapi/v1.json) describes the endpoints currently exposed.
 
-**Windows verification:** Release build, web lint/type/build and packaged HTTPS smoke passed. All four EF migrations applied on native PostgreSQL 17; rerunning the update was a no-op. Readiness returned `{"database":"ready"}` and a temporary HTTPS API project was independently located by SQL in `dev_prism_ai` on `127.0.0.1:5432` as `dev_prism_ai_app`, then removed. The packaged frontend and project API responded without a session. Foreign browser origins and writes without Origin returned `403`. The previous Podman database was not changed. These are local verification results, not provider or integrated release evidence.
+**Windows verification:** Release build, web lint/type/build and packaged HTTPS smoke passed. All four EF migrations applied on native PostgreSQL 17; rerunning the update was a no-op. Readiness returned `{"database":"ready"}` and a temporary HTTPS API project was independently located by SQL in `dev_prism_ai` on `127.0.0.1:5432` as `dev_prism_ai_app`, then removed. The packaged frontend and project API responded without a session. Foreign browser origins and writes without Origin returned `403`. The previous Podman database was not changed.
+
+**Workspace UI verification:** On the packaged HTTPS app, a Chrome smoke walkthrough created a project and feature, searched by feature key, drafted and explicitly approved a local decision, and reopened that decision in the context rail after reload. It also checked provider and sync history empty/availability states and the responsive layout from 320 to 1440 pixels, with no browser errors or third-party requests. These are local verification results, not provider or integrated release evidence.
 
 ## Build and run on Windows
 

@@ -1,6 +1,7 @@
 // Spec: Documentation/dev-prism-ai-specs/03_UI_UX_SPEC.md (local workspace).
 import { useQuery } from '@tanstack/react-query'
 import { ProjectWorkspace } from './ProjectWorkspace'
+import { ContextCard, Icon, PageIntro, WorkspaceColumns, WorkspaceFrame, type WorkspaceHealth } from './WorkspaceUi'
 import './App.css'
 
 type DatabaseState = 'ready' | 'notConfigured' | 'migrationRequired' | 'unreachable'
@@ -31,25 +32,28 @@ async function readDatabaseStatus(signal: AbortSignal): Promise<DatabaseState> {
 export default function App() {
   const database = useQuery({ queryKey: ['database-health'], queryFn: ({ signal }) => readDatabaseStatus(signal) })
   const packagedOrigin = window.location.origin === 'https://localhost:5081'
-  const label = database.isFetching ? 'Checking PostgreSQL…' : database.isSuccess
-    ? statusLabel[database.data] : 'Local API unavailable'
+  const ready = database.isSuccess && database.data === 'ready'
+  const health: WorkspaceHealth = {
+    label: database.isPending ? 'Checking PostgreSQL…' : database.isSuccess ? statusLabel[database.data] : 'Local API unavailable',
+    tone: ready ? 'good' : database.isPending ? 'neutral' : 'warning',
+    checking: database.isFetching,
+    refresh: () => void database.refetch(),
+  }
+
+  if (packagedOrigin && ready) return <ProjectWorkspace health={health} />
 
   return (
-    <main className="shell">
-      <header className="brand"><span aria-hidden="true" className="brand-mark" />DEV PRISM AI</header>
-      <section className="intro" aria-labelledby="title">
-        <p className="eyebrow">Local MVP · Workspace</p>
-        <h1 id="title">Your project, organized by feature.</h1>
-        <p className="lead">A local workspace for evidence from Azure DevOps and Figma, and the decisions that connect them.</p>
-        <div className="setup">
-          <h2>Local database</h2>
-          <p role="status">{label}</p>
-          <button type="button" onClick={() => void database.refetch()} disabled={database.isFetching}>Check status</button>
-        </div>
-        {packagedOrigin && database.isSuccess && database.data === 'ready' ? <ProjectWorkspace /> : null}
-        {!packagedOrigin ? <p className="note">Open the local HTTPS app at <a href="https://localhost:5081">localhost:5081</a> to manage projects.</p> : null}
-        <p className="note">Azure DevOps and Figma connections are not available in this build.</p>
-      </section>
-    </main>
+    <WorkspaceFrame health={health}>
+      <PageIntro eyebrow="Local workspace" title="Workspace" accent="setup" description="DEV PRISM AI keeps its workspace and decision history on this workstation." hero />
+      <WorkspaceColumns context={
+        <ContextCard title="Local access" icon="info"><p>Project management is available only on the packaged HTTPS app.</p></ContextCard>
+      }>
+        <section className="panel">
+          <div className="panel-heading"><span className="icon-tile"><Icon name="database" /></span><div><h2>Database readiness</h2><p>{health.label}</p></div></div>
+          {!packagedOrigin ? <a className="button button-primary" href="https://localhost:5081">Open local workspace <Icon name="arrow" /></a> :
+            <button className="button button-secondary" type="button" onClick={health.refresh} disabled={health.checking}><Icon name="refresh" /> Check status</button>}
+        </section>
+      </WorkspaceColumns>
+    </WorkspaceFrame>
   )
 }
