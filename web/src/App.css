@@ -12,7 +12,8 @@ h1 { font-size: clamp(2rem, 5vw, 3.75rem); line-height: 1.1; margin: 0; }
 .setup button { min-height: 44px; padding-inline: 1rem; border: 1px solid #9b87f5; border-radius: 8px; color: #e8ecf5; background: #202638; cursor: pointer; }
 .setup button:disabled { opacity: 0.65; cursor: default; }
 .pairing-field { display: grid; gap: 0.5rem; margin-block: 1rem; }
-.pairing-field input { min-height: 40px; border: 1px solid #596177; border-radius: 6px; padding-inline: 0.5rem; font: inherit; background: #10131c; color: #e8ecf5; }
+.pairing-field input, .pairing-field textarea { min-height: 40px; border: 1px solid #596177; border-radius: 6px; padding-inline: 0.5rem; font: inherit; background: #10131c; color: #e8ecf5; }
+.pairing-field textarea { min-height: 5rem; resize: vertical; }
 .setup a { color: #a9cfff; }
 .workspace-nav { display: flex; flex-wrap: wrap; gap: 1rem; }
 .workspace-nav a[aria-current="page"] { color: #fff; font-weight: 650; }

@@ -67,6 +67,55 @@ namespace DevPrism.Infrastructure.Persistence.Migrations
                     b.ToTable("connections", (string)null);
                 });
 
+            modelBuilder.Entity("DevPrism.Infrastructure.Persistence.FeatureRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("ProjectId", "Id");
+
+                    b.HasIndex("ProjectId", "Key")
+                        .IsUnique()
+                        .HasDatabaseName("ux_features_project_key");
+
+                    b.ToTable("features", (string)null);
+                });
+
             modelBuilder.Entity("DevPrism.Infrastructure.Persistence.ProjectRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -186,6 +235,15 @@ namespace DevPrism.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("DevPrism.Infrastructure.Persistence.ConnectionRecord", b =>
+                {
+                    b.HasOne("DevPrism.Infrastructure.Persistence.ProjectRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DevPrism.Infrastructure.Persistence.FeatureRecord", b =>
                 {
                     b.HasOne("DevPrism.Infrastructure.Persistence.ProjectRecord", null)
                         .WithMany()

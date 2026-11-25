@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent } from 'react'
 import { Link, NavLink, Route, Routes, useNavigate, useParams } from 'react-router'
 import { SyncHistory } from './SyncHistory'
+import { FeatureWorkspace } from './FeatureWorkspace'
 
 type Project = { id: string; slug: string; name: string; version: number }
 type ProjectList = { items: Project[] }
@@ -29,7 +30,8 @@ export function ProjectWorkspace({ csrfToken }: { csrfToken: string }) {
       <Routes>
         <Route path="/" element={<ProjectPicker csrfToken={csrfToken} />} />
         <Route path="/projects" element={<ProjectPicker csrfToken={csrfToken} />} />
-        <Route path="/projects/:projectId/:section?" element={<ProjectView />} />
+        <Route path="/projects/:projectId/features/:featureId" element={<ProjectView csrfToken={csrfToken} />} />
+        <Route path="/projects/:projectId/:section?" element={<ProjectView csrfToken={csrfToken} />} />
         <Route path="*" element={<p>Page unavailable. <Link to="/projects">Projects</Link></p>} />
       </Routes>
     </section>
@@ -81,14 +83,9 @@ function ProjectPicker({ csrfToken }: { csrfToken: string }) {
   )
 }
 
-const descriptions = {
-  features: 'Feature Explorer is not available in this build.',
-  connections: 'No provider connection has been verified through this application.',
-}
-
 /** Opens one authorized project and explicitly labels sections not yet implemented. */
-function ProjectView() {
-  const { projectId, section = 'features' } = useParams()
+function ProjectView({ csrfToken }: { csrfToken: string }) {
+  const { projectId, featureId, section = 'features' } = useParams()
   const project = useQuery({
     queryKey: ['project', projectId],
     queryFn: ({ signal }) => readJson<Project>(`${api}/${encodeURIComponent(projectId ?? '')}`, { signal }),
@@ -106,9 +103,10 @@ function ProjectView() {
         <NavLink to={`${base}/connections`}>Connections</NavLink>
         <NavLink to={`${base}/sync`}>Sync history</NavLink>
       </nav>
-      {section === 'sync' ? <SyncHistory projectId={project.data.id} /> : (
-        <p>{Object.hasOwn(descriptions, section) ? descriptions[section as keyof typeof descriptions] : 'Project section unavailable.'}</p>
-      )}
+      {section === 'features' ? <FeatureWorkspace projectId={project.data.id} featureId={featureId} csrfToken={csrfToken} /> : null}
+      {section === 'sync' ? <SyncHistory projectId={project.data.id} /> : null}
+      {section === 'connections' ? <p>No provider connection has been verified through this application.</p> : null}
+      {!['features', 'sync', 'connections'].includes(section) ? <p>Project section unavailable.</p> : null}
     </>
   )
 }

@@ -2,6 +2,7 @@
 // Composition root for the loopback API and packaged React application.
 using System.Threading.RateLimiting;
 using DevPrism.Api.Auth;
+using DevPrism.Api.Features;
 using DevPrism.Api.Projects;
 using DevPrism.Api.Sync;
 using DevPrism.Infrastructure.Persistence;
@@ -61,6 +62,7 @@ app.UseAuthorization();
 var api = app.MapGroup("/api/v1");
 api.MapLocalAuth();
 api.MapProjects();
+api.MapFeatures();
 api.MapSyncRuns();
 app.MapOpenApi("/api/openapi/{documentName}.json").RequireAuthorization();
 // The process can answer HTTP before the database and release prerequisites exist.

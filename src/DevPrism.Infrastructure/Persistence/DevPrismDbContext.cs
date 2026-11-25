@@ -15,6 +15,9 @@ public sealed class DevPrismDbContext(DbContextOptions<DevPrismDbContext> option
     /// <summary>Returns recorded import attempts; callers constrain project scope.</summary>
     public DbSet<SyncRunRecord> SyncRuns => Set<SyncRunRecord>();
 
+    /// <summary>Returns locally authored features within a caller-supplied project scope.</summary>
+    public DbSet<FeatureRecord> Features => Set<FeatureRecord>();
+
     /// <summary>Defines stable IDs, provider scope keys, and optimistic concurrency.</summary>
     /// <param name="modelBuilder">The EF Core schema builder.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -46,6 +49,25 @@ public sealed class DevPrismDbContext(DbContextOptions<DevPrismDbContext> option
             .OnDelete(DeleteBehavior.Restrict);
 
         ConfigureSyncRuns(modelBuilder);
+        ConfigureFeatures(modelBuilder);
+    }
+
+    /// <summary>Keeps feature identity and keys scoped to their project.</summary>
+    private static void ConfigureFeatures(ModelBuilder modelBuilder)
+    {
+        var feature = modelBuilder.Entity<FeatureRecord>();
+        feature.ToTable("features");
+        feature.HasKey(row => row.Id);
+        feature.HasAlternateKey(row => new { row.ProjectId, row.Id });
+        feature.Property(row => row.Id).HasColumnName("id");
+        feature.Property(row => row.ProjectId).HasColumnName("project_id");
+        feature.Property(row => row.Key).HasColumnName("key").HasMaxLength(80);
+        feature.Property(row => row.Name).HasColumnName("name").HasMaxLength(160);
+        feature.Property(row => row.Description).HasColumnName("description").HasMaxLength(2000);
+        feature.Property(row => row.CreatedAt).HasColumnName("created_at");
+        feature.Property(row => row.Version).HasColumnName("version").IsConcurrencyToken();
+        feature.HasIndex(row => new { row.ProjectId, row.Key }).IsUnique().HasDatabaseName("ux_features_project_key");
+        feature.HasOne<ProjectRecord>().WithMany().HasForeignKey(row => row.ProjectId).OnDelete(DeleteBehavior.Restrict);
     }
 
     /// <summary>Enforces scoped references and the one-active-run laptop limit in PostgreSQL.</summary>
