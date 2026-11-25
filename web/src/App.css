@@ -1,0 +1,13 @@
+/* Spec: Documentation/dev-prism-ai-specs/03_UI_UX_SPEC.md. */
+.shell { width: min(100% - 3rem, 72rem); margin-inline: auto; }
+.brand { display: flex; align-items: center; gap: 0.75rem; min-height: 4.5rem; font-weight: 650; letter-spacing: 0.08em; }
+.brand-mark { width: 0.8rem; height: 0.8rem; background: #9b87f5; transform: rotate(45deg); border-radius: 2px; }
+.intro { max-width: 42rem; padding-block: clamp(2rem, 10vh, 6rem); }
+.eyebrow { color: #b8a9fd; letter-spacing: 0.06em; }
+h1 { font-size: clamp(2rem, 5vw, 3.75rem); line-height: 1.1; margin: 0; }
+.lead, .note { color: #a5afc2; }
+.lead { font-size: 1.2rem; }
+.setup { background: #171c29; border: 1px solid #343b50; border-radius: 12px; padding: 1.25rem; margin-top: 2rem; }
+.setup h2 { margin: 0; font-size: 1rem; }
+.setup button { min-height: 44px; padding-inline: 1rem; border: 1px solid #9b87f5; border-radius: 8px; color: #e8ecf5; background: #202638; cursor: pointer; }
+.setup button:disabled { opacity: 0.65; cursor: default; }

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- Publishing packages already-built assets; restore/build on either side stays independent. -->
+  <Target Name="IncludeReactAssets" BeforeTargets="ComputeFilesToPublish">
+    <PropertyGroup>
+      <ReactDist>$(MSBuildProjectDirectory)/../../web/dist</ReactDist>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(ReactDist)/index.html')" Text="Build the React app before publishing DEV PRISM AI." />
+    <ItemGroup>
+      <_ReactFiles Include="$(ReactDist)/**/*" />
+      <ResolvedFileToPublish Include="@(_ReactFiles)">
+        <RelativePath>wwwroot/%(_ReactFiles.RecursiveDir)%(_ReactFiles.Filename)%(_ReactFiles.Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
+</Project>
