@@ -2,6 +2,9 @@
 // Pairs the browser with the local service without persisting credentials or session tokens.
 import { type FormEvent, useEffect, useState } from 'react'
 
+import { useQueryClient } from '@tanstack/react-query'
+import { ProjectWorkspace } from './ProjectWorkspace'
+
 type Session = {
   status: 'authenticated' | 'pairingRequired' | 'pairingUnavailable'
   csrfToken: string
@@ -16,6 +19,7 @@ async function readSession(signal?: AbortSignal): Promise<Session> {
 
 /** Provides explicit pairing or sign-out at the packaged HTTPS origin. */
 export function LocalPairing() {
+  const queryClient = useQueryClient()
   const [session, setSession] = useState<Session | null>(null)
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
@@ -47,6 +51,7 @@ export function LocalPairing() {
       if (!response.ok) {
         setError(response.status === 429 ? 'Too many attempts. Wait one minute before retrying.' : 'The local operation was refused.')
       }
+      queryClient.clear()
       setSession(await readSession())
     } catch {
       setError('The local service could not complete the request. Reload before retrying.')
@@ -57,6 +62,7 @@ export function LocalPairing() {
   }
 
   return (
+    <>
     <section className="setup" aria-labelledby="pairing-title">
       <h2 id="pairing-title">Local operator</h2>
       {!packaged ? <p>Open the packaged HTTPS app to pair.</p> : null}
@@ -75,5 +81,7 @@ export function LocalPairing() {
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
     </section>
+    {session?.status === 'authenticated' ? <ProjectWorkspace csrfToken={session.csrfToken} /> : null}
+    </>
   )
 }

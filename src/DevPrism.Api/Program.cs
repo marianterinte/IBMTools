@@ -14,6 +14,7 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenLocalhost(5081, endpoint => endpoint.UseHttps());
 });
 builder.Services.AddProblemDetails();
+builder.Services.AddOpenApi("v1");
 builder.Services.AddDbContext<DevPrismDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DevPrism")));
 builder.Services.AddSingleton(TimeProvider.System);
@@ -58,6 +59,7 @@ app.UseAuthorization();
 var api = app.MapGroup("/api/v1");
 api.MapLocalAuth();
 api.MapProjects();
+app.MapOpenApi("/api/openapi/{documentName}.json").RequireAuthorization();
 // The process can answer HTTP before the database and release prerequisites exist.
 api.MapGet("/health", () => Results.Json(
     new { status = "notReady", stage = "scaffold" },

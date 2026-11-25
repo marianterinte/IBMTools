@@ -15,9 +15,12 @@ internal static partial class ProjectEndpoints
     public static void MapProjects(this RouteGroupBuilder api)
     {
         var projects = api.MapGroup("/projects").RequireAuthorization();
-        projects.MapGet("", List);
-        projects.MapGet("/{projectId:guid}", Get).WithName("GetProject");
-        projects.MapPost("", Create).AddEndpointFilter(LocalAuthEndpoints.ValidateLocalMutation);
+        projects.MapGet("", List).Produces<ProjectList>().Produces(401).ProducesProblem(503);
+        projects.MapGet("/{projectId:guid}", Get).WithName("GetProject")
+            .Produces<ProjectSummary>().Produces(401).Produces(404).ProducesProblem(503);
+        projects.MapPost("", Create).AddEndpointFilter(LocalAuthEndpoints.ValidateLocalMutation)
+            .Produces<ProjectSummary>(201).ProducesValidationProblem().Produces(401).ProducesProblem(403)
+            .ProducesProblem(409).ProducesProblem(503);
     }
 
     /// <summary>Returns a bounded list of the authenticated operator's projects.</summary>
@@ -29,7 +32,7 @@ internal static partial class ProjectEndpoints
         var items = await db.Projects.AsNoTracking().Where(row => row.OwnerId == owner)
             .OrderBy(row => row.Slug).Take(100)
             .Select(row => new ProjectSummary(row.Id, row.Slug, row.Name, row.Version)).ToArrayAsync(ct);
-        return Results.Ok(new { items });
+        return Results.Ok(new ProjectList(items));
     }
 
     /// <summary>Returns a project without disclosing a project owned by another identity.</summary>
@@ -97,4 +100,7 @@ internal static partial class ProjectEndpoints
 
     /// <summary>Project metadata returned without its owner or any source credentials.</summary>
     internal sealed record ProjectSummary(Guid Id, string Slug, string Name, long Version);
+
+    /// <summary>Bounded workspace list for a single operator.</summary>
+    internal sealed record ProjectList(ProjectSummary[] Items);
 }

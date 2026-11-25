@@ -15,8 +15,8 @@ internal static class LocalAuthEndpoints
             var status = context.User.Identity?.IsAuthenticated == true ? "authenticated"
                 : sessions.CanPair ? "pairingRequired" : "pairingUnavailable";
             var tokens = antiforgery.GetAndStoreTokens(context);
-            return Results.Ok(new { status, csrfToken = tokens.RequestToken });
-        });
+            return Results.Ok(new SessionStatus(status, tokens.RequestToken!));
+        }).Produces<SessionStatus>();
 
         auth.MapPost("/pair", (PairRequest request, HttpContext context, LocalOperatorSession sessions) =>
         {
@@ -27,14 +27,16 @@ internal static class LocalAuthEndpoints
             options.Expires = expiresAt;
             context.Response.Cookies.Append(LocalOperatorSession.CookieName, token, options);
             return Results.NoContent();
-        }).AddEndpointFilter(ValidateLocalMutation).RequireRateLimiting("pairing");
+        }).AddEndpointFilter(ValidateLocalMutation).RequireRateLimiting("pairing")
+            .Produces(204).ProducesProblem(400).ProducesProblem(401).ProducesProblem(403).Produces(429);
 
         auth.MapPost("/sign-out", (HttpContext context, LocalOperatorSession sessions) =>
         {
             sessions.Revoke(context.Request.Cookies[LocalOperatorSession.CookieName]);
             context.Response.Cookies.Delete(LocalOperatorSession.CookieName, SessionCookieOptions());
             return Results.NoContent();
-        }).AddEndpointFilter(ValidateLocalMutation).RequireAuthorization();
+        }).AddEndpointFilter(ValidateLocalMutation).RequireAuthorization()
+            .Produces(204).ProducesProblem(400).Produces(401).ProducesProblem(403);
     }
 
     /// <summary>Checks the packaged browser origin and antiforgery token before local mutations.</summary>
@@ -60,4 +62,7 @@ internal static class LocalAuthEndpoints
 
     /// <summary>First-run proof typed into the local application, never sent to a provider.</summary>
     internal sealed record PairRequest(string? Code);
+
+    /// <summary>Browser-visible authentication state and transient antiforgery token.</summary>
+    internal sealed record SessionStatus(string Status, string CsrfToken);
 }

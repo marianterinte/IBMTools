@@ -10,6 +10,8 @@ The application runs over loopback HTTPS and serves the packaged React UI and lo
 
 **Local pairing / project API evidence:** The HTTPS smoke walkthrough verified unauthenticated denial, antiforgery and origin refusal, pairing with a Secure/HttpOnly cookie, local project creation and duplicate conflict, cross-owner non-disclosure, no-store responses and revocation of the previous session after sign-out. Provider credential setup remains unverified and is not exposed.
 
+**Project shell and HTTP contract:** After pairing, the UI lists and creates persisted projects and exposes linkable Features, Connections and Sync history sections. The rendered shell does not imply that those features are complete. The paired operator can inspect the current API contract at `https://localhost:5081/api/openapi/v1.json`. Verified locally: Release/locked restore, web lint/type/build, authenticated OpenAPI with project response metadata, unpaired denial and an HTTPS project deep-link response. Browser interaction and the full G1 gate have not been verified by that HTTP smoke check.
+
 ## Build and run on Windows
 
 Prerequisites: .NET SDK 10.0.404 and Node.js 24.22.3 (see the toolchain pins). Either install supported SDKs or prepend your local toolchain directories to PATH. Run from the repository root in PowerShell:
