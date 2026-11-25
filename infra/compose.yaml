@@ -1,0 +1,21 @@
+# Spec: Documentation/dev-prism-ai-specs/04_ARCHITECTURE.md (local DEV PRISM database).
+services:
+  db:
+    image: docker.io/library/postgres:17.9-alpine@sha256:c7526c0f6c3f30260a563d7bcf8ad778effac59a44f8ffa86678c35418338609
+    environment:
+      POSTGRES_DB: devprism
+      POSTGRES_USER: devprism
+      POSTGRES_PASSWORD: ${DEVPRISM_DB_PASSWORD:?Supply a generated local database password}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "devprism", "-d", "devprism"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  data:
