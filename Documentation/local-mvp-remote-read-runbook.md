@@ -11,6 +11,19 @@ This is the handoff for G0. It does not authorize any account, install a provide
 
 Do not paste credentials, authorization codes, callback URLs, tokens, signed assets or private payloads into chat, config files checked into Git, or screenshots. The operator completes provider sign-in in the approved browser/client flow. A ready tenant or file is not proof that PRISM's client can authenticate. If the flow requires consent from an administrator, wait for that approval. Never change tenant settings to bypass the requirement.
 
+## Azure DevOps: run the .NET probe
+
+1. Use a dedicated, approved Microsoft Entra app registration in the demo tenant. Under **Authentication → Mobile and desktop applications**, register the redirect URI `http://localhost` for the [MSAL system-browser flow](https://learn.microsoft.com/en-us/entra/msal/dotnet/acquiring-tokens/using-web-browsers). Use a public client, not a client secret; do not enable unrelated flows. Verify that the Azure DevOps MCP enterprise application is available in the tenant (application ID `2a72489c-aab2-4b65-b93a-a91edccf33b8`). Under API permissions, grant only its delegated `wit.read` permission and obtain any required consent. Do not grant legacy `Ado.Mcp.Tools`, write or manage access. Existing work item visibility in the provider UI is also required.
+2. In an **interactive PowerShell terminal**, from the repository root, run:
+
+   ```powershell
+   .\.tools\dotnet-10.0.404\dotnet.exe run --project tools/DevPrism.AdoMcpProbe -c Release
+   ```
+
+   If you use a system-wide .NET 10.0.404 SDK instead, use `dotnet` in place of the repo-local executable. Enter the organization slug, exact project name, selected work item numeric ID, directory (tenant) ID and dedicated application (client) ID **in the local terminal**. Type `READ` to confirm the scope, then sign in with the authorized account in the system browser. Do not paste an access token or authorization code anywhere. The temporary loopback callback belongs to MSAL; the actual work-item read uses the official remote MCP server.
+3. The probe uses the public MCP resource's documented `.default` OAuth scope with that dedicated registration and rejects missing or broader than expected grants. It negotiates Streamable HTTP, asks for the documented read-only `wit_work_item` tool, and only invokes `get` after checking the advertised input. It does not write a config, token, or payload file; logs are limited to a schema hash and sanitized outcome. It passes only if the result proves the exact item ID, source project, a nonempty title and another meaningful field. A missing native revision is reported separately. The probe is not part of the CLI, server or UI required to run PRISM.
+4. Report only the sanitized result line or the `Not verified` reason. If the client, consent or schema is rejected, keep the gate blocked; no PAT, REST substitution, or broader grant. If the probe passes, still run M02 through the application before marking the MVP release complete.
+
 ## Read-only verification sequence
 
 1. Record the provider profile, supported HTTP transport and .NET MCP client version. Authenticate only to the intended official endpoint. Negotiate the session and record which read capability is available, without dumping the complete response or advertising a write capability.
