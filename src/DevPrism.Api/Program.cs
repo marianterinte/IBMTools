@@ -3,6 +3,7 @@
 using System.Threading.RateLimiting;
 using DevPrism.Api.Auth;
 using DevPrism.Api.Projects;
+using DevPrism.Api.Sync;
 using DevPrism.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi("v1");
 builder.Services.AddDbContext<DevPrismDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DevPrism")));
+builder.Services.AddHostedService<SyncRunRecovery>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<LocalOperatorSession>();
 builder.Services.AddAuthentication(LocalOperatorSession.Scheme)
@@ -59,6 +61,7 @@ app.UseAuthorization();
 var api = app.MapGroup("/api/v1");
 api.MapLocalAuth();
 api.MapProjects();
+api.MapSyncRuns();
 app.MapOpenApi("/api/openapi/{documentName}.json").RequireAuthorization();
 // The process can answer HTTP before the database and release prerequisites exist.
 api.MapGet("/health", () => Results.Json(

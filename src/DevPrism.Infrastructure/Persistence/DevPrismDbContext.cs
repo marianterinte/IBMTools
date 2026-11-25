@@ -12,6 +12,9 @@ public sealed class DevPrismDbContext(DbContextOptions<DevPrismDbContext> option
     /// <summary>Returns source configuration rows; callers must explicitly constrain project scope.</summary>
     public DbSet<ConnectionRecord> Connections => Set<ConnectionRecord>();
 
+    /// <summary>Returns recorded import attempts; callers constrain project scope.</summary>
+    public DbSet<SyncRunRecord> SyncRuns => Set<SyncRunRecord>();
+
     /// <summary>Defines stable IDs, provider scope keys, and optimistic concurrency.</summary>
     /// <param name="modelBuilder">The EF Core schema builder.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -41,5 +44,41 @@ public sealed class DevPrismDbContext(DbContextOptions<DevPrismDbContext> option
         connection.HasIndex(row => new { row.ProjectId, row.Provider, row.ScopeKey }).IsUnique();
         connection.HasOne<ProjectRecord>().WithMany().HasForeignKey(row => row.ProjectId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        ConfigureSyncRuns(modelBuilder);
+    }
+
+    /// <summary>Enforces scoped references and the one-active-run laptop limit in PostgreSQL.</summary>
+    private static void ConfigureSyncRuns(ModelBuilder modelBuilder)
+    {
+        var run = modelBuilder.Entity<SyncRunRecord>();
+        run.ToTable("sync_runs", table =>
+        {
+            table.HasCheckConstraint("ck_sync_runs_slot", "active_slot = 1");
+            table.HasCheckConstraint("ck_sync_runs_state", "state IN ('Queued','Running','Succeeded','Partial','Failed','Interrupted','Cancelled')");
+            table.HasCheckConstraint("ck_sync_runs_operation", "operation IN ('Probe','Import')");
+            table.HasCheckConstraint("ck_sync_runs_version", "connection_version > 0");
+        });
+        run.HasKey(row => row.Id);
+        run.Property(row => row.Id).HasColumnName("id");
+        run.Property(row => row.ProjectId).HasColumnName("project_id");
+        run.Property(row => row.ConnectionId).HasColumnName("connection_id");
+        run.Property(row => row.ConnectionVersion).HasColumnName("connection_version");
+        run.Property(row => row.Operation).HasColumnName("operation").HasConversion<string>().HasMaxLength(16);
+        run.Property(row => row.State).HasColumnName("state").HasConversion<string>().HasMaxLength(16).IsConcurrencyToken();
+        run.Property(row => row.RequestedAt).HasColumnName("requested_at");
+        run.Property(row => row.StartedAt).HasColumnName("started_at");
+        run.Property(row => row.FinishedAt).HasColumnName("finished_at");
+        run.Property(row => row.ReasonCode).HasColumnName("reason_code").HasMaxLength(64);
+        run.HasOne<ConnectionRecord>().WithMany()
+            .HasForeignKey(row => new { row.ProjectId, row.ConnectionId })
+            .HasPrincipalKey(row => new { row.ProjectId, row.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+        run.HasIndex(row => new { row.ProjectId, row.RequestedAt, row.Id });
+
+        // All active attempts share a single slot, even across connections and projects.
+        run.Property<int>("ActiveSlot").HasColumnName("active_slot").HasDefaultValue(1);
+        run.HasIndex("ActiveSlot").HasDatabaseName("ux_sync_runs_single_active").IsUnique()
+            .HasFilter("state IN ('Queued','Running')");
     }
 }

@@ -61,8 +61,6 @@ namespace DevPrism.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasAlternateKey("ProjectId", "Id");
-
                     b.HasIndex("ProjectId", "Provider", "ScopeKey")
                         .IsUnique();
 
@@ -109,11 +107,99 @@ namespace DevPrism.Infrastructure.Persistence.Migrations
                     b.ToTable("projects", (string)null);
                 });
 
+            modelBuilder.Entity("DevPrism.Infrastructure.Persistence.SyncRunRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("ActiveSlot")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("active_slot");
+
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connection_id");
+
+                    b.Property<long>("ConnectionVersion")
+                        .HasColumnType("bigint")
+                        .HasColumnName("connection_version");
+
+                    b.Property<DateTimeOffset?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("operation");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("ReasonCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("reason_code");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("State")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("state");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActiveSlot")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sync_runs_single_active")
+                        .HasFilter("state IN ('Queued','Running')");
+
+                    b.HasIndex("ProjectId", "ConnectionId");
+
+                    b.HasIndex("ProjectId", "RequestedAt", "Id");
+
+                    b.ToTable("sync_runs", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_sync_runs_operation", "operation IN ('Probe','Import')");
+
+                            t.HasCheckConstraint("ck_sync_runs_slot", "active_slot = 1");
+
+                            t.HasCheckConstraint("ck_sync_runs_state", "state IN ('Queued','Running','Succeeded','Partial','Failed','Interrupted','Cancelled')");
+
+                            t.HasCheckConstraint("ck_sync_runs_version", "connection_version > 0");
+                        });
+                });
+
             modelBuilder.Entity("DevPrism.Infrastructure.Persistence.ConnectionRecord", b =>
                 {
                     b.HasOne("DevPrism.Infrastructure.Persistence.ProjectRecord", null)
                         .WithMany()
                         .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DevPrism.Infrastructure.Persistence.SyncRunRecord", b =>
+                {
+                    b.HasOne("DevPrism.Infrastructure.Persistence.ConnectionRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId", "ConnectionId")
+                        .HasPrincipalKey("ProjectId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

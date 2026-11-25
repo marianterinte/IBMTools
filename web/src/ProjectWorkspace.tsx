@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent } from 'react'
 import { Link, NavLink, Route, Routes, useNavigate, useParams } from 'react-router'
+import { SyncHistory } from './SyncHistory'
 
 type Project = { id: string; slug: string; name: string; version: number }
 type ProjectList = { items: Project[] }
@@ -83,7 +84,6 @@ function ProjectPicker({ csrfToken }: { csrfToken: string }) {
 const descriptions = {
   features: 'Feature Explorer is not available in this build.',
   connections: 'No provider connection has been verified through this application.',
-  sync: 'The import worker is not available in this build.',
 }
 
 /** Opens one authorized project and explicitly labels sections not yet implemented. */
@@ -106,7 +106,9 @@ function ProjectView() {
         <NavLink to={`${base}/connections`}>Connections</NavLink>
         <NavLink to={`${base}/sync`}>Sync history</NavLink>
       </nav>
-      <p>{Object.hasOwn(descriptions, section) ? descriptions[section as keyof typeof descriptions] : 'Project section unavailable.'}</p>
+      {section === 'sync' ? <SyncHistory projectId={project.data.id} /> : (
+        <p>{Object.hasOwn(descriptions, section) ? descriptions[section as keyof typeof descriptions] : 'Project section unavailable.'}</p>
+      )}
     </>
   )
 }

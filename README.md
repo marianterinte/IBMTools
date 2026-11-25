@@ -12,6 +12,8 @@ The application runs over loopback HTTPS and serves the packaged React UI and lo
 
 **Project shell and HTTP contract:** After pairing, the UI lists and creates persisted projects and exposes linkable Features, Connections and Sync history sections. The rendered shell does not imply that those features are complete. The paired operator can inspect the current API contract at `https://localhost:5081/api/openapi/v1.json`. Verified locally: Release/locked restore, web lint/type/build, authenticated OpenAPI with project response metadata, unpaired denial and an HTTPS project deep-link response. Browser interaction and the full G1 gate have not been verified by that HTTP smoke check.
 
+**Sync history foundation:** A real PostgreSQL migration stores scoped run status, and the HTTPS history API shows the recorded result. A synthetic local check showed that a second active run was rejected and startup marked the abandoned attempt as interrupted. This is not connector or worker execution proof; no endpoint can start a provider import yet.
+
 ## Build and run on Windows
 
 Prerequisites: .NET SDK 10.0.404 and Node.js 24.22.3 (see the toolchain pins). Either install supported SDKs or prepend your local toolchain directories to PATH. Run from the repository root in PowerShell:
