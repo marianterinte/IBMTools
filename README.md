@@ -1,68 +1,73 @@
 # DEV PRISM AI
 
-A local, feature-oriented workspace for Azure DevOps and Figma. The application and PostgreSQL run on the operator's laptop; the required provider reads use real remote MCP. See [Local MVP scope](Documentation/dev-prism-ai-specs/00_START_HERE.md), [provider readiness](Documentation/local-mvp-g0-evidence.md) and the [remote read runbook](Documentation/local-mvp-remote-read-runbook.md).
+A local, feature-oriented workspace for Azure DevOps and Figma. Only the app and PostgreSQL run on the workstation. Required provider reads use real remote MCP. See the [Local MVP scope](Documentation/dev-prism-ai-specs/00_START_HERE.md), [G0 evidence](Documentation/local-mvp-g0-evidence.md) and [remote read runbook](Documentation/local-mvp-remote-read-runbook.md).
 
 ## Current increment
 
-The application runs over loopback HTTPS and serves the packaged React UI and local pairing. The paired operator can use the project API when PostgreSQL is configured and migrated. Readiness still reports `503` because the complete import stack is not available. No provider is contacted.
+Open [https://localhost:5081](https://localhost:5081) after starting the packaged app. When PostgreSQL is ready, the project workspace opens directly, with no local login, pairing or session. Only use this on a trusted, single-operator workstation: loopback HTTPS, Host and browser Origin restrictions do not isolate local users or processes. Provider authorization is separate.
 
-**G1.1 evidence (verified locally, Windows x64):** Release build, web lint/type/build and packaged publish succeeded with .NET SDK 10.0.404 and Node 24.22.3. The packaged HTTPS SPA returned 200, readiness returned 503 with scaffold status, and unknown API/media paths returned 404 instead of the SPA. This does not close the G1 gate.
+Local projects, features, versioned decision memory and a scoped sync history are persisted. Sync history is a foundation only: no provider connector or import worker is enabled. Local decision evidence is currently an operator statement. The [local OpenAPI document](https://localhost:5081/api/openapi/v1.json) describes the endpoints currently exposed.
 
-**Local pairing / project API evidence:** The HTTPS smoke walkthrough verified unauthenticated denial, antiforgery and origin refusal, pairing with a Secure/HttpOnly cookie, local project creation and duplicate conflict, cross-owner non-disclosure, no-store responses and revocation of the previous session after sign-out. Provider credential setup remains unverified and is not exposed.
-
-**Project shell and HTTP contract:** After pairing, the UI lists and creates persisted projects and exposes linkable Features, Connections and Sync history sections. The rendered shell does not imply that those features are complete. The paired operator can inspect the current API contract at `https://localhost:5081/api/openapi/v1.json`. Verified locally: Release/locked restore, web lint/type/build, authenticated OpenAPI with project response metadata, unpaired denial and an HTTPS project deep-link response. Browser interaction and the full G1 gate have not been verified by that HTTP smoke check.
-
-**Sync history foundation:** A real PostgreSQL migration stores scoped run status, and the HTTPS history API shows the recorded result. A synthetic local check showed that a second active run was rejected and startup marked the abandoned attempt as interrupted. This is not connector or worker execution proof; no endpoint can start a provider import yet.
-
-**Local Feature Explorer and memory:** The HTTPS walkthrough verified feature creation, search, duplicate rejection and cross-project isolation; then a versioned decision was drafted, explicitly approved and superseded. An approval against the wrong baseline was rejected. The active and superseded versions were both readable after process restart and re-pairing. Evidence is an operator statement only; imported evidence and attachment remain unavailable.
+**Windows verification:** Release build, web lint/type/build and packaged HTTPS smoke passed. All four EF migrations applied on native PostgreSQL 17; rerunning the update was a no-op. Readiness returned `{"database":"ready"}` and a temporary HTTPS API project was independently located by SQL in `dev_prism_ai` on `127.0.0.1:5432` as `dev_prism_ai_app`, then removed. The packaged frontend and project API responded without a session. Foreign browser origins and writes without Origin returned `403`. The previous Podman database was not changed. These are local verification results, not provider or integrated release evidence.
 
 ## Build and run on Windows
 
-Prerequisites: .NET SDK 10.0.404 and Node.js 24.22.3 (see the toolchain pins). Either install supported SDKs or prepend your local toolchain directories to PATH. Run from the repository root in PowerShell:
+Use .NET SDK 10.0.404 and Node.js 24.22.3. Install the pinned versions or prepend the corresponding toolchain directories to PATH. From the repository root in PowerShell:
 
 ```powershell
 dotnet dev-certs https --trust
-Set-Location web
+Push-Location web
 npm.cmd ci
 npm.cmd run lint
 npm.cmd run build
-Set-Location ..
-dotnet build DevPrism.slnx -c Release
-dotnet publish src/DevPrism.Api/DevPrism.Api.csproj -c Release -o .local/publish
-$bytes = New-Object byte[] 32
-$rng = [Security.Cryptography.RandomNumberGenerator]::Create()
-try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
-$env:DevPrism__PairingCode = [BitConverter]::ToString($bytes).Replace('-', '')
-Set-Clipboard -Value $env:DevPrism__PairingCode
-Set-Location .local/publish
-try { dotnet DevPrism.Api.dll } finally { Remove-Item Env:DevPrism__PairingCode -ErrorAction SilentlyContinue }
+Pop-Location
+dotnet restore DevPrism.slnx --locked-mode
+dotnet build DevPrism.slnx -c Release --no-restore
+dotnet publish src/DevPrism.Api/DevPrism.Api.csproj -c Release -o .local/publish --no-restore
 ```
 
-Open **https://localhost:5081**, paste the one-time code in the Local operator form, and clear your clipboard. The grant is valid for 15 minutes and can be used once. The session expires after 30 minutes, when signed out, or when the app stops. To pair again after one of those events, restart with a newly generated code. Do not reuse, log or share the clipboard value.
+Configure and migrate one of the databases below in the **same PowerShell process**, then run:
 
-For frontend development, start the API separately, then run `npm.cmd run dev` from the web directory. The dev UI listens on `127.0.0.1:5173` and proxies readiness only with TLS validation; on Windows set `NODE_USE_SYSTEM_CA=1` for Node to use the trusted development certificate in the Windows certificate store. Pairing and project operations use the packaged HTTPS origin.
+```powershell
+Push-Location .local/publish
+try { dotnet DevPrism.Api.dll } finally { Pop-Location; Remove-Item Env:ConnectionStrings__DevPrism -ErrorAction SilentlyContinue }
+```
 
-No provider credentials are needed to build or run this scaffold. Do not put tokens in the repository or in diagnostic output. A successful build and local startup do not satisfy the remote MCP gates.
+The packaged app listens on loopback HTTPS at `https://localhost:5081`. `/api/v1/health` reports DB readiness only: `ready` (200), or `notConfigured`, `migrationRequired` or `unreachable` (503). For frontend development, Vite at `http://127.0.0.1:5173` proxies only readiness, not workspace data. On Windows, set `NODE_USE_SYSTEM_CA=1` so Node can validate the trusted ASP.NET development certificate. Use the packaged HTTPS origin for project CRUD. Unknown API/media URLs return errors rather than the SPA fallback.
 
-## Local database setup
+## Local PostgreSQL setup
 
-Use Docker Compose or a verified Compose provider backed by Podman. The database is loopback-only on port 55432 and uses an independent persistent volume. From the repo root in PowerShell, generate a local password once and preserve it when restarting the same database:
+Choose native PostgreSQL 17 **or** the Compose database. Do not share an unrelated database or use a PostgreSQL admin login for the application. Keep secrets in a private, OS-protected store where possible and inject them into process configuration; never commit them or print resolved config. Back up before applying a destructive migration. The runtime does not create, migrate or reset the DB automatically.
+
+### Native PostgreSQL 17
+
+Provision a dedicated database (e.g. `dev_prism_ai`) and login/owner (e.g. `dev_prism_ai_app`) with a unique password. Use a non-superuser without cluster-wide `CREATEDB`, `CREATEROLE` or replication privileges, and restrict the new database to intended roles. The app connects to `127.0.0.1:5432` by default in this example; verify the server's listener, firewall and access rules separately, since a loopback connection string does not constrain where the server listens. Set `ConnectionStrings__DevPrism` in the shell using the private connection string from your credential store, in the form `Host=127.0.0.1;Port=5432;Database=dev_prism_ai;Username=dev_prism_ai_app;Password=<secret>`. Use connection-string quoting or a builder for values containing delimiters. No Docker or Podman is needed for this option.
+
+### Compose-managed PostgreSQL 17
+
+Use Docker Compose or a verified Compose provider backed by Podman. The database uses an independent persistent volume and publishes loopback port 55432. Generate a local password once and preserve it for the same volume:
 
 ```powershell
 New-Item -ItemType Directory -Force .local | Out-Null
 if (-not (Test-Path .local/db-password)) {
-    $bytes = New-Object byte[] 24
-    $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
-    try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
-    [IO.File]::WriteAllText((Join-Path (Get-Location) '.local/db-password'), [BitConverter]::ToString($bytes).Replace('-', ''))
+  $bytes = New-Object byte[] 32
+  $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+  try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
+  [IO.File]::WriteAllText((Join-Path (Get-Location).Path '.local/db-password'), [BitConverter]::ToString($bytes).Replace('-', ''))
 }
 $env:DEVPRISM_DB_PASSWORD = (Get-Content .local/db-password -Raw).Trim()
 $env:ConnectionStrings__DevPrism = 'Host=127.0.0.1;Port=55432;Database=devprism;Username=devprism;Password=' + $env:DEVPRISM_DB_PASSWORD
 docker compose -p devprism-local -f infra/compose.yaml up -d --wait
+Remove-Item Env:DEVPRISM_DB_PASSWORD
+```
+
+When using Podman, start the existing machine and use its Compose provider or a verified standalone binary targeting the Docker-compatible named pipe. Keep the ignored password file private. The Compose setup was verified with PostgreSQL 17.9 under Podman 5.4.1 and Compose 5.8.0; the initial migration was idempotent and a synthetic project survived a database restart.
+
+### Apply migrations for either option
+
+From the repository root in the configured shell:
+
+```powershell
 dotnet tool restore
 dotnet tool run dotnet-ef database update --project src/DevPrism.Infrastructure --startup-project src/DevPrism.Api
 ```
-
-For Podman on Windows, start the existing machine; run the Compose command with a verified standalone Compose binary targeting the Podman Docker-compatible named pipe, or use an installed Compose provider through Podman. Keep the generated password file local and private. Avoid printing the environment or resolved Compose configuration; both may contain credentials. Migrations are explicit; application startup never recreates the database.
-
-**G1.2 evidence (verified locally):** PostgreSQL 17.9 was healthy under Podman 5.4.1 and Compose 5.8.0. The initial EF migration applied, a second update had no work, the DB rejected an orphan connection, and a synthetic project persisted across a container restart. The published port was loopback only. This is schema evidence, not proof of endpoint authorization or provider access.

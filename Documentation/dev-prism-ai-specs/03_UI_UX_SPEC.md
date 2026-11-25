@@ -6,7 +6,7 @@ Desktop-first responsive application, English UI. Product identity DEV PRISM AI,
 
 ## Local MVP UI contract
 
-The shipped navigation is **Features**, **Connections** and **Sync history** within the selected project. Default to the feature list after pairing if a project exists; otherwise show project creation and a path to configure two provider connections. Do not render nonfunctional Chat, Missions or Graph controls in MVP. Reuse one semantic layout, breadcrumbs and a shared status component; English UI, desktop first, keyboard workable at 1280×720. Never use color alone for access, source or version states.
+The shipped navigation is **Features**, **Connections** and **Sync history** within the selected project. Open the local project picker directly when PostgreSQL is ready, with no local login or pairing. Open the feature list when the operator selects a project; if no project exists, show project creation. Show database setup or connectivity guidance instead of rendering an unusable workspace. Provider setup remains separate from local access. Do not render nonfunctional Chat, Missions or Graph controls in MVP. Reuse one semantic layout, breadcrumbs and a shared status component; English UI, desktop first, keyboard workable at 1280×720. Never use color alone for access, source or version states.
 
 | Screen / route | Initial and success experience | Empty, loading or failure path |
 |---|---|---|

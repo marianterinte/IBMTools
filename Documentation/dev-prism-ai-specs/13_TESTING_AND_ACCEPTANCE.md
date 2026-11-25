@@ -10,7 +10,7 @@ Run on the target laptop before presentation. Save a short redacted record for e
 
 | ID | Walkthrough | Pass condition |
 |---|---|---|
-| M01 | Start locally, pair and configure a project. | UI/API on loopback, local DB ready, no credentials returned. No saved project/media visible before pairing. |
+| M01 | Start the packaged app and open or configure a project directly. | UI/API on loopback HTTPS, DB ready, no login/pairing or credentials returned. Prove a project written through the API is in the configured dedicated DB. Reject foreign browser origins and mutations without the packaged Origin; verify cross-project identifiers are not disclosed. |
 | M02 | Select and probe a real Boards item, then sync it. | Scoped, usable work item visible; persisted run proves Remote MCP route and actual identity. An original link/handshake does not qualify. |
 | M03 | Select and probe a real Figma frame, then sync it. | Scoped usable frame context visible; actual file/node or verified binding and Remote MCP route. Missing image does not fail a usable frame read. |
 | M04 | Create Dish Rating, link both resources, draft and approve a rule with evidence. | One page groups the resources, shows originals and revisions/absence, and presents the exact locally approved version. No provider mutation. |
@@ -30,7 +30,7 @@ The following coverage catalog supports later tracks; it does not mandate new te
 | ID | Scenario | Expected evidence |
 |---|---|---|
 | T01 | bootstrap fresh DB, restart, migrate prior DB | health and migration logs, persistent records |
-| T02 | local auth, CSRF, cross-project IDs in REST/hub/media | 401/403/404, no unauthorized events or content |
+| T02 | deployment-specific auth/CSRF where applicable, local boundary, cross-project IDs in REST/hub/media | 401/403/404, no unauthorized events or content |
 | T03 | invalid connection URL, redirects, secret logs | blocked network/path, no token disclosure |
 | T04 | read sync same page twice, reordered data | stable identity/version, one change event |
 | T05 | crash between page and cursor commit | safe replay, no lost resources |

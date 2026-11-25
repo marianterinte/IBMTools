@@ -12,14 +12,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, { cache: 'no-store', ...init })
   if (response.status === 409) throw new Error('The decision changed or a draft with that key already exists. Review the current versions.')
   if (response.status === 400) throw new Error('Check the decision key, statement and rationale.')
-  if (response.status === 401) throw new Error('Local session is locked. Reload to check pairing.')
   if (!response.ok) throw new Error('Local decision memory is unavailable.')
   return response.json()
 }
 
 /** Displays approved memory and requires a separate confirmation for the exact draft. */
-export function DecisionMemory({ projectId, featureId, csrfToken }: {
-  projectId: string; featureId: string; csrfToken: string
+export function DecisionMemory({ projectId, featureId }: {
+  projectId: string; featureId: string
 }) {
   const [review, setReview] = useState<{ draft: Decision; baseline: Decision | null } | null>(null)
   const [draftKey, setDraftKey] = useState('')
@@ -34,7 +33,7 @@ export function DecisionMemory({ projectId, featureId, csrfToken }: {
   function post(target: string, body: unknown) {
     return request<Decision>(target, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-DevPrism-CSRF': csrfToken },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
   }
@@ -88,9 +87,9 @@ export function DecisionMemory({ projectId, featureId, csrfToken }: {
           )}
           {decisions.data.truncated ? <p>Only the first 100 versions are shown.</p> : null}
           <form onSubmit={save}>
-            <div className="pairing-field"><label htmlFor="decision-key">Decision key</label><input id="decision-key" required maxLength={80} placeholder="BR-006" value={draftKey} onChange={(e) => setDraftKey(e.target.value)} /></div>
-            <div className="pairing-field"><label htmlFor="decision-statement">Statement</label><textarea id="decision-statement" required maxLength={2000} value={statement} onChange={(e) => setStatement(e.target.value)} /></div>
-            <div className="pairing-field"><label htmlFor="decision-rationale">Rationale</label><textarea id="decision-rationale" required maxLength={2000} value={rationale} onChange={(e) => setRationale(e.target.value)} /></div>
+            <div className="form-field"><label htmlFor="decision-key">Decision key</label><input id="decision-key" required maxLength={80} placeholder="BR-006" value={draftKey} onChange={(e) => setDraftKey(e.target.value)} /></div>
+            <div className="form-field"><label htmlFor="decision-statement">Statement</label><textarea id="decision-statement" required maxLength={2000} value={statement} onChange={(e) => setStatement(e.target.value)} /></div>
+            <div className="form-field"><label htmlFor="decision-rationale">Rationale</label><textarea id="decision-rationale" required maxLength={2000} value={rationale} onChange={(e) => setRationale(e.target.value)} /></div>
             <button type="submit" disabled={draft.isPending}>Save draft</button>
             {draft.isError ? <p role="alert">{draft.error.message}</p> : null}
           </form>

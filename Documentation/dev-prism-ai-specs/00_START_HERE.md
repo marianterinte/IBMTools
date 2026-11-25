@@ -25,14 +25,14 @@ The pack describes the desired target, not existing source code. Inspect the act
 | INV-06 | AI and imported text are untrusted; model suggestions never directly mutate remote resources, Git main, credential storage or policy state. |
 | INV-07 | Isolated agent workspaces, bounded process execution, explicit path and command policies, credentials separated from child processes. Git worktrees alone are not a sandbox. |
 | INV-08 | Merge main requires independent check evidence, current target SHA, provider policy compliance and explicit human approval. No force push or bypass. |
-| INV-09 | Every record and request scoped to project and operator authorization; no cross-project leakage. No secret in logs, prompts, git history, UI, fixtures or plain DB columns. |
+| INV-09 | Every workspace request enforces the local trust boundary and project scope, including source visibility and provider authorization where applicable; no cross-project leakage. No secret in logs, prompts, git history, UI, fixtures or plain DB columns. |
 | INV-10 | Persistent jobs, execution events and action receipts survive service restart. Interrupted runs must reconcile before resuming. |
 | INV-11 | Honest status, no fabricated percentages, costs, provider IDs, successful calls, test results or model reasoning. Show observed state and unavailable data. |
 | INV-12 | No Azure cloud hosting requirement. Demo only uses dedicated non-confidential data and user-authorized external services. |
 
 ## Scope gates
 
-**P0-A = Local MVP (G0–G3).** Local single-operator app and PostgreSQL; authorized read-capability probes and manual import via remote MCP from ADO Boards and a scoped Figma frame; Feature Explorer with local links, immutable content history, freshness, and an explicitly approved local decision. Reimport without duplicates, show a changed source revision, and recover browseable state after restart. The app does not write to any provider. Local project settings, links and decision approvals are still editable.
+**P0-A = Local MVP (G0–G3).** Local single-operator app and PostgreSQL, with direct workspace access on a trusted workstation (no app login or pairing); authorized read-capability probes and manual import via remote MCP from ADO Boards and a scoped Figma frame; Feature Explorer with local links, immutable content history, freshness, and an explicitly approved local decision. Reimport without duplicates, show a changed source revision, and recover browseable state after restart. The app does not write to any provider. Local project settings, links and decision approvals are still editable.
 
 **MVP companion capabilities:** ADO Wiki and ADO Repos references are separate read capabilities; the Figma rendered preview is separate from frame context. Include them in the demo only when proven. For an auxiliary operation only, a specific REST/API fallback may be added after owner approval and documented per capability. Never substitute it for a required MCP read, silently change routes, or present fallback/fixture evidence as remote MCP proof. See [connector matrix](06_CONNECTORS_AND_SYNC.md#local-mvp-capability-matrix).
 

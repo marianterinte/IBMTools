@@ -14,7 +14,6 @@ const projectsKey = ['operator-projects'] as const
 /** Checks application status before deserializing the corresponding local project response. */
 async function readJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, { cache: 'no-store', ...init })
-  if (response.status === 401) throw new Error('Local session is locked. Reload to check pairing.')
   if (response.status === 404) throw new Error('Project unavailable.')
   if (response.status === 409) throw new Error('A project already uses that slug.')
   if (response.status === 400) throw new Error('Check the project name and slug.')
@@ -22,16 +21,16 @@ async function readJson<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json()
 }
 
-/** Defines navigable project routes, mounted only for an authenticated local session. */
-export function ProjectWorkspace({ csrfToken }: { csrfToken: string }) {
+/** Defines navigable project routes, for the single local workspace. */
+export function ProjectWorkspace() {
   return (
     <section className="setup" aria-labelledby="projects-title">
       <h2 id="projects-title">Project workspace</h2>
       <Routes>
-        <Route path="/" element={<ProjectPicker csrfToken={csrfToken} />} />
-        <Route path="/projects" element={<ProjectPicker csrfToken={csrfToken} />} />
-        <Route path="/projects/:projectId/features/:featureId" element={<ProjectView csrfToken={csrfToken} />} />
-        <Route path="/projects/:projectId/:section?" element={<ProjectView csrfToken={csrfToken} />} />
+        <Route path="/" element={<ProjectPicker />} />
+        <Route path="/projects" element={<ProjectPicker />} />
+        <Route path="/projects/:projectId/features/:featureId" element={<ProjectView />} />
+        <Route path="/projects/:projectId/:section?" element={<ProjectView />} />
         <Route path="*" element={<p>Page unavailable. <Link to="/projects">Projects</Link></p>} />
       </Routes>
     </section>
@@ -39,14 +38,14 @@ export function ProjectWorkspace({ csrfToken }: { csrfToken: string }) {
 }
 
 /** Lists persisted projects and provides a minimal create form. */
-function ProjectPicker({ csrfToken }: { csrfToken: string }) {
+function ProjectPicker() {
   const client = useQueryClient()
   const navigate = useNavigate()
   const projects = useQuery({ queryKey: projectsKey, queryFn: ({ signal }) => readJson<ProjectList>(api, { signal }) })
   const create = useMutation({
     mutationFn: (fields: { name: string; slug: string }) => readJson<Project>(api, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-DevPrism-CSRF': csrfToken },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(fields),
     }),
     onSuccess: async (project) => {
@@ -72,8 +71,8 @@ function ProjectPicker({ csrfToken }: { csrfToken: string }) {
             <ul>{projects.data.items.map((p) => <li key={p.id}><Link to={`/projects/${p.id}/features`}>{p.name}</Link></li>)}</ul>
           ) : <p>No local projects yet.</p>}
           <form onSubmit={submit}>
-            <div className="pairing-field"><label htmlFor="project-name">Project name</label><input id="project-name" name="name" required maxLength={160} /></div>
-            <div className="pairing-field"><label htmlFor="project-slug">Project slug</label><input id="project-slug" name="slug" required maxLength={80} placeholder="dishrate" /></div>
+            <div className="form-field"><label htmlFor="project-name">Project name</label><input id="project-name" name="name" required maxLength={160} /></div>
+            <div className="form-field"><label htmlFor="project-slug">Project slug</label><input id="project-slug" name="slug" required maxLength={80} placeholder="dishrate" /></div>
             <button type="submit" disabled={create.isPending}>Create project</button>
             {create.isError ? <p role="alert">{create.error.message}</p> : null}
           </form>
@@ -84,7 +83,7 @@ function ProjectPicker({ csrfToken }: { csrfToken: string }) {
 }
 
 /** Opens one authorized project and explicitly labels sections not yet implemented. */
-function ProjectView({ csrfToken }: { csrfToken: string }) {
+function ProjectView() {
   const { projectId, featureId, section = 'features' } = useParams()
   const project = useQuery({
     queryKey: ['project', projectId],
@@ -103,7 +102,7 @@ function ProjectView({ csrfToken }: { csrfToken: string }) {
         <NavLink to={`${base}/connections`}>Connections</NavLink>
         <NavLink to={`${base}/sync`}>Sync history</NavLink>
       </nav>
-      {section === 'features' ? <FeatureWorkspace projectId={project.data.id} featureId={featureId} csrfToken={csrfToken} /> : null}
+      {section === 'features' ? <FeatureWorkspace projectId={project.data.id} featureId={featureId} /> : null}
       {section === 'sync' ? <SyncHistory projectId={project.data.id} /> : null}
       {section === 'connections' ? <p>No provider connection has been verified through this application.</p> : null}
       {!['features', 'sync', 'connections'].includes(section) ? <p>Project section unavailable.</p> : null}

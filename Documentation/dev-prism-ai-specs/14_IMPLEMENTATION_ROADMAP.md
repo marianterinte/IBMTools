@@ -17,8 +17,8 @@ Gate: both required core reads proven remote with actual scoped provider data. K
 ## G1 — Local foundation and UI shell (Local MVP)
 Mandatory: 03, 04, 05, 11, 12, 13.
 - [X] G1.1 [MEDIUM] Scaffold Minimal API modules and React/TypeScript/Vite with local same-origin packaging; pin versions and existing build/lint checks. Evidence: `8eaaf69`; Release build, web lint/type/build, verified loopback HTTPS, truthful unready status and API/media 404 behavior.
-- [X] G1.2 [HARD] PostgreSQL Compose/migrations with project keys, connection config versions and explicit DB bootstrap. Evidence: `76d275d`; first migration applied, second application was a no-op, orphan connection rejected, project survived a database restart.
-- [ ] G1.3 [HARD] Implement local pairing, sessions, Host/Origin validation, antiforgery, project scope, vault and redaction.
+- [X] G1.2 [HARD] Dedicated PostgreSQL (native or Compose)/migrations with project keys, connection config versions and explicit DB bootstrap. Evidence: `76d275d`; first migration applied, second application was a no-op, orphan connection rejected, project survived a database restart.
+- [ ] G1.3 [HARD] Enforce local loopback HTTPS/Host/Origin/Fetch Metadata and project scope without app login; implement provider vault and redaction. Local boundary and native DB smoke evidence are recorded in the [run instructions](../../README.md); provider storage and access evidence are still open.
 - [ ] G1.4 [MEDIUM] Establish OpenAPI DTO and HTTP error contracts, auth/readiness and scope-aware query keys.
 - [ ] G1.5 [HARD] Persist bounded import jobs and interruption recovery; one local worker and status polling, no outbox/SignalR requirement.
 - [ ] G1.6 [MEDIUM] Ship feature/connection/sync navigation with truthful setup/error states and repeatable local instructions.

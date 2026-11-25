@@ -1,77 +1,54 @@
-// Spec: Documentation/dev-prism-ai-specs/03_UI_UX_SPEC.md.
-// Public first-run shell: report local startup without exposing project content.
-import { useEffect, useState } from 'react'
-import { LocalPairing } from './LocalPairing'
+// Spec: Documentation/dev-prism-ai-specs/03_UI_UX_SPEC.md (local workspace).
+import { useQuery } from '@tanstack/react-query'
+import { ProjectWorkspace } from './ProjectWorkspace'
 import './App.css'
 
-type LocalStatus = 'checking' | 'scaffold' | 'unavailable'
+type DatabaseState = 'ready' | 'notConfigured' | 'migrationRequired' | 'unreachable'
 
-const statusLabel: Record<LocalStatus, string> = {
-  checking: 'Checking the local service…',
-  scaffold: 'Local service reachable · Setup not ready',
-  unavailable: 'Local service unavailable',
+const statusLabel: Record<DatabaseState, string> = {
+  ready: 'PostgreSQL connected',
+  notConfigured: 'PostgreSQL is not configured',
+  migrationRequired: 'PostgreSQL connected · Run the database migrations',
+  unreachable: 'Cannot connect to PostgreSQL · Check the local service and connection settings',
 }
 
-/** Reads the local readiness endpoint without probing or authenticating any provider. */
-async function readLocalStatus(signal: AbortSignal): Promise<LocalStatus> {
+/** Queries the local database status, never Azure DevOps or Figma. */
+async function readDatabaseStatus(signal: AbortSignal): Promise<DatabaseState> {
   const response = await fetch('/api/v1/health', {
-    signal,
+    signal: AbortSignal.any([signal, AbortSignal.timeout(5_000)]),
     cache: 'no-store',
     headers: { Accept: 'application/json' },
   })
-  if (response.status !== 503) return 'unavailable'
-
+  if (!response.ok && response.status !== 503) throw new Error('Unexpected health status')
   const body: unknown = await response.json()
-  return typeof body === 'object' && body !== null && 'stage' in body && body.stage === 'scaffold'
-    ? 'scaffold'
-    : 'unavailable'
+  if (typeof body !== 'object' || body === null || !('database' in body)
+    || typeof body.database !== 'string' || !Object.hasOwn(statusLabel, body.database))
+    throw new Error('Unexpected health response')
+  return body.database as DatabaseState
 }
 
-/** Shows the local MVP boundary and the current setup status. */
+/** Opens the single-operator workspace directly when the local database is ready. */
 export default function App() {
-  const [status, setStatus] = useState<LocalStatus>('checking')
-  const [check, setCheck] = useState(0)
-
-  useEffect(() => {
-    const pending = new AbortController()
-    const timeout = window.setTimeout(() => {
-      pending.abort()
-      setStatus('unavailable')
-    }, 5_000)
-    void readLocalStatus(pending.signal)
-      .then((next) => {
-        if (!pending.signal.aborted) setStatus(next)
-      })
-      .catch(() => {
-        if (!pending.signal.aborted) setStatus('unavailable')
-      })
-      .finally(() => window.clearTimeout(timeout))
-    return () => {
-      window.clearTimeout(timeout)
-      pending.abort()
-    }
-  }, [check])
-
-  /** Rechecks local readiness; does not initiate an import or provider connection. */
-  function recheck() {
-    setStatus('checking')
-    setCheck((current) => current + 1)
-  }
+  const database = useQuery({ queryKey: ['database-health'], queryFn: ({ signal }) => readDatabaseStatus(signal) })
+  const packagedOrigin = window.location.origin === 'https://localhost:5081'
+  const label = database.isFetching ? 'Checking PostgreSQL…' : database.isSuccess
+    ? statusLabel[database.data] : 'Local API unavailable'
 
   return (
     <main className="shell">
       <header className="brand"><span aria-hidden="true" className="brand-mark" />DEV PRISM AI</header>
       <section className="intro" aria-labelledby="title">
-        <p className="eyebrow">Local MVP · Setup</p>
+        <p className="eyebrow">Local MVP · Workspace</p>
         <h1 id="title">Your project, organized by feature.</h1>
         <p className="lead">A local workspace for evidence from Azure DevOps and Figma, and the decisions that connect them.</p>
         <div className="setup">
-          <h2>Local service</h2>
-          <p role="status">{statusLabel[status]}</p>
-          <button type="button" onClick={recheck} disabled={status === 'checking'}>Check status</button>
+          <h2>Local database</h2>
+          <p role="status">{label}</p>
+          <button type="button" onClick={() => void database.refetch()} disabled={database.isFetching}>Check status</button>
         </div>
-        <LocalPairing />
-        <p className="note">Remote provider connections are not available in this build. No provider has been contacted.</p>
+        {packagedOrigin && database.isSuccess && database.data === 'ready' ? <ProjectWorkspace /> : null}
+        {!packagedOrigin ? <p className="note">Open the local HTTPS app at <a href="https://localhost:5081">localhost:5081</a> to manage projects.</p> : null}
+        <p className="note">Azure DevOps and Figma connections are not available in this build.</p>
       </section>
     </main>
   )

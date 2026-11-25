@@ -1,34 +1,33 @@
 // Spec: Documentation/dev-prism-ai-specs/11_API_AND_EVENTS.md (project boundaries).
 namespace DevPrism.Api.Projects;
 
-using System.Security.Claims;
 using System.Text.RegularExpressions;
-using DevPrism.Api.Auth;
+using DevPrism.Api.Local;
 using DevPrism.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
-/// <summary>Exposes only workspaces that belong to the authenticated local operator.</summary>
+/// <summary>Exposes only workspaces that belong to the local workspace.</summary>
 internal static partial class ProjectEndpoints
 {
-    /// <summary>Registers authorized project routes and the antiforgery check on writes.</summary>
+    /// <summary>Registers the local project routes.</summary>
     public static void MapProjects(this RouteGroupBuilder api)
     {
-        var projects = api.MapGroup("/projects").RequireAuthorization();
-        projects.MapGet("", List).Produces<ProjectList>().Produces(401).ProducesProblem(503);
+        var projects = api.MapGroup("/projects");
+        projects.MapGet("", List).Produces<ProjectList>().ProducesProblem(503);
         projects.MapGet("/{projectId:guid}", Get).WithName("GetProject")
-            .Produces<ProjectSummary>().Produces(401).Produces(404).ProducesProblem(503);
-        projects.MapPost("", Create).AddEndpointFilter(LocalAuthEndpoints.ValidateLocalMutation)
-            .Produces<ProjectSummary>(201).ProducesValidationProblem().Produces(401).ProducesProblem(403)
+            .Produces<ProjectSummary>().Produces(404).ProducesProblem(503);
+        projects.MapPost("", Create)
+            .Produces<ProjectSummary>(201).ProducesValidationProblem().ProducesProblem(403)
             .ProducesProblem(409).ProducesProblem(503);
     }
 
-    /// <summary>Returns a bounded list of the authenticated operator's projects.</summary>
+    /// <summary>Returns a bounded list of the local operator's projects.</summary>
     private static async Task<IResult> List(
-        ClaimsPrincipal actor, DevPrismDbContext db, IConfiguration configuration, CancellationToken ct)
+        DevPrismDbContext db, IConfiguration configuration, CancellationToken ct)
     {
         if (!DatabaseConfigured(configuration)) return DatabaseUnavailable();
-        var owner = GetOwner(actor);
+        var owner = LocalWorkspace.OperatorId;
         var items = await db.Projects.AsNoTracking().Where(row => row.OwnerId == owner)
             .OrderBy(row => row.Slug).Take(100)
             .Select(row => new ProjectSummary(row.Id, row.Slug, row.Name, row.Version)).ToArrayAsync(ct);
@@ -37,10 +36,10 @@ internal static partial class ProjectEndpoints
 
     /// <summary>Returns a project without disclosing a project owned by another identity.</summary>
     private static async Task<IResult> Get(
-        Guid projectId, ClaimsPrincipal actor, DevPrismDbContext db, IConfiguration configuration, CancellationToken ct)
+        Guid projectId, DevPrismDbContext db, IConfiguration configuration, CancellationToken ct)
     {
         if (!DatabaseConfigured(configuration)) return DatabaseUnavailable();
-        var owner = GetOwner(actor);
+        var owner = LocalWorkspace.OperatorId;
         var project = await db.Projects.AsNoTracking().Where(row => row.Id == projectId && row.OwnerId == owner)
             .Select(row => new ProjectSummary(row.Id, row.Slug, row.Name, row.Version)).SingleOrDefaultAsync(ct);
         return project is null ? Results.NotFound() : Results.Ok(project);
@@ -48,7 +47,7 @@ internal static partial class ProjectEndpoints
 
     /// <summary>Creates a server-scoped project with validated identity and a unique operator slug.</summary>
     private static async Task<IResult> Create(
-        ProjectRequest request, ClaimsPrincipal actor, DevPrismDbContext db, IConfiguration configuration,
+        ProjectRequest request, DevPrismDbContext db, IConfiguration configuration,
         TimeProvider clock, CancellationToken ct)
     {
         if (!DatabaseConfigured(configuration)) return DatabaseUnavailable();
@@ -61,7 +60,7 @@ internal static partial class ProjectEndpoints
 
         var row = new ProjectRecord
         {
-            Id = Guid.NewGuid(), OwnerId = GetOwner(actor), Name = name, Slug = slug, CreatedAt = clock.GetUtcNow(),
+            Id = Guid.NewGuid(), OwnerId = LocalWorkspace.OperatorId, Name = name, Slug = slug, CreatedAt = clock.GetUtcNow(),
         };
         db.Projects.Add(row);
         try
@@ -80,9 +79,6 @@ internal static partial class ProjectEndpoints
         return Results.CreatedAtRoute("GetProject", new { projectId = row.Id },
             new ProjectSummary(row.Id, row.Slug, row.Name, row.Version));
     }
-
-    /// <summary>Uses only the authenticated claim, never a client-supplied owner identifier.</summary>
-    private static Guid GetOwner(ClaimsPrincipal actor) => Guid.Parse(actor.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     /// <summary>Prevents an unconfigured workspace from looking like an empty database.</summary>
     private static bool DatabaseConfigured(IConfiguration configuration) =>

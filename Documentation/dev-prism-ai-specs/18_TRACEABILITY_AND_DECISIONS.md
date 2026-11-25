@@ -2,14 +2,14 @@
 
 ## Owner-established direction vs proposed implementation defaults
 
-The owner clarified that only DEV PRISM AI and its persistence run locally. ADO and Figma must be real online services reached through real remote MCP; a local MCP fixture is not an acceptable substitute. The presentation at IBM uses authorized synthetic DishRate assets, not employer data or branding. The owner also rejected new FE/BE unit and integration test suites as standard task deliverables and authorized documentation work before implementation. The wider product vision (chat, controlled changes, coding agents, impact analysis) remains intact. The selected technical defaults below specify the baseline without asserting vendor capabilities or authorizing code work.
+The owner clarified that only DEV PRISM AI and its persistence run locally. ADO and Figma must be real online services reached through real remote MCP; a local MCP fixture is not an acceptable substitute. The presentation at IBM uses authorized synthetic DishRate assets, not employer data or branding. The owner also rejected new FE/BE unit and integration test suites as standard task deliverables and authorized documentation work before implementation. On 2026-11-25 the owner selected direct workspace access on a trusted single-operator workstation (no app accounts, sessions or pairing) and a separate native PostgreSQL database for the preview. Provider OAuth and scope remain required. The wider product vision (chat, controlled changes, coding agents, impact analysis) remains intact. The selected technical defaults below specify the baseline without asserting vendor capabilities or authorizing code work.
 
 ## Proposed ADR register
 
 | ID | Decision | Rationale / alternative |
 |---|---|---|
 | ADR-01 | ASP.NET Core Minimal API on .NET 10 LTS; React + TypeScript + Vite | Backend owns policy and persistence; same-origin local SPA; no separate web server in packaged mode. |
-| ADR-02 | Local PostgreSQL + EF Core/Npgsql; relational resources, versions and links | Atomic checkpoints and cross-project constraints; no graph DB, vector DB or cache service. Reopen if Docker-free setup becomes required. |
+| ADR-02 | Local PostgreSQL + EF Core/Npgsql; relational resources, versions and links | Atomic checkpoints and cross-project constraints; no graph DB, vector DB or cache service. Native PostgreSQL 17 and Compose are both supported local options; use a dedicated database and non-admin role. |
 | ADR-03 | Remote MCP for required read ingestion, deterministic adapters without model calls | Mandatory for ADO Boards and Figma frame context. Auxiliary-only REST fallback needs a recorded approval; none assumed. |
 | ADR-04 | Feature is first-class local entity | source tool navigation secondary; links evidence-based |
 | ADR-05 | Lexical/graph context first; pgvector optional | test incremental value rather than assume savings |
@@ -25,8 +25,9 @@ The owner clarified that only DEV PRISM AI and its persistence run locally. ADO 
 | ADR-15 | Single local worker, persisted runs and bounded status polling | Restart-safe without SignalR, separate worker or timed provider polling in MVP. Revisit for streaming chat or multi-worker deployment. |
 | ADR-16 | Manual evidence and existing checks for MVP acceptance | Consistent task template, observable negative cases, no mandatory new FE/BE test suites. |
 | ADR-17 | Remote source authority separate from approved local decisions | Imports cannot rewrite local policy. Unknown/denied/transient access states remain distinct. |
+| ADR-18 | Trusted single-operator local workspace without app authentication | Retain loopback HTTPS, exact Host/port, browser Origin/Fetch Metadata and project scope. Simpler startup than transient pairing; no isolation from local processes or other OS users. Never expose it as a shared service; provider access and later external approvals stay separate. |
 
-ADR-01–03 and ADR-12–17 are the documentation baseline for the Local MVP. Vendor behavior is unverified until G0 evidence is recorded; later roadmap defaults remain provisional. For a change record alternatives, consequences, owner/date and affected requirements. For auxiliary fallbacks record the exact capability, alternate route, provenance label and what still does not qualify as a remote MCP read. Update linked contracts instead of maintaining competing versions.
+ADR-01–03 and ADR-12–18 are the documentation baseline for the Local MVP. Vendor behavior is unverified until G0 evidence is recorded; later roadmap defaults remain provisional. For a change record alternatives, consequences, owner/date and affected requirements. For auxiliary fallbacks record the exact capability, alternate route, provenance label and what still does not qualify as a remote MCP read. Update linked contracts instead of maintaining competing versions.
 
 ## Requirement traceability
 
@@ -70,7 +71,7 @@ ADR-01–03 and ADR-12–17 are the documentation baseline for the Local MVP. Ve
 | Too much scope before demo | incomplete product | P0-A first, P0-B next; parallel/Figma write stretch; prevalidated fallback |
 | Live service outage | failed demo | fixture replay labeled, real receipts from rehearsal, no fake live calls |
 | Confidential employer data | policy/legal risk | synthetic dedicated assets, policy approval before real usage |
-| Target public deployment with fixture auth | security risk | local only; separate production requirements and review |
+| Exposing the single-operator workspace to other users or networks | local data disclosure or writes | trusted workstation only; no isolation of local processes, no LAN/public deployment; separate identity and isolation review before scope changes |
 
 ## Open verification and decision items
 
@@ -79,11 +80,11 @@ ADR-01–03 and ADR-12–17 are the documentation baseline for the Local MVP. Ve
 | V-01 ADO remote MCP | Redacted proof of supported remote transport, approved auth and a live scoped Boards read. | Blocks ADO MCP acceptance. The locally hosted ADO MCP server and REST are not substitutes. |
 | V-02 Figma remote MCP | Redacted proof of custom client access, scopes, real frame content and observable revision/coverage or documented absence. | Blocks Figma MCP acceptance if the core read fails. Preview is independent. |
 | V-03 Companions | Separate results for Wiki, Repos and rendered preview; one recorded decision per requested fallback. | Core can proceed; no implicit fallback. |
-| V-04 Host and toolchain | Pin exact .NET SDK, Node LTS, package/SDK and PostgreSQL versions after proving local startup and provider compatibility. | Baseline architecture is selected; versions and Windows host setup remain unverified. |
+| V-04 Host and toolchain | Pin exact .NET SDK, Node LTS, package/SDK and PostgreSQL versions after proving local startup and provider compatibility. | Pinned Windows toolchain, packaged HTTPS and PostgreSQL startup verified; provider compatibility and secure credential storage remain open. |
 | V-05 Later tracks | Independent AI/CLI/merge/sandbox approvals and capability proof when those tracks are scheduled. | No effect on Local MVP. |
 
 Do not include keys or high-sensitivity identifiers in chat or evidence. Record only approved, sanitized evidence and use the secure setup path for credentials.
 
 ## Evidence register (initial)
 
-No application source, runtime tests, provider credentials, live calls, code execution or cloud deployment verified by this specification package. Only official documentation research and design authoring performed. Each roadmap completion must append actual evidence. Demo mockups are conceptual, names and numbers are illustrative. This honest baseline is essential to distinguish the desired product from the current implementation.
+This pack defines the target, not completion of a gate. See the [local build and database evidence](../../README.md) and [G0 provider evidence](../local-mvp-g0-evidence.md) for actual observations and blockers. Each roadmap completion must append actual evidence. Demo mockups are conceptual; names and numbers are illustrative.

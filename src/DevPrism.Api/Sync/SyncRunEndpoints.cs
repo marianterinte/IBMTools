@@ -1,7 +1,7 @@
 // Spec: Documentation/dev-prism-ai-specs/11_API_AND_EVENTS.md (scoped sync history).
 namespace DevPrism.Api.Sync;
 
-using System.Security.Claims;
+using DevPrism.Api.Local;
 using DevPrism.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -9,28 +9,28 @@ using Npgsql;
 /// <summary>Reads local run status without probing or contacting providers.</summary>
 internal static class SyncRunEndpoints
 {
-    /// <summary>Registers the read-only, authenticated sync history endpoints.</summary>
+    /// <summary>Registers the read-only local sync history endpoints.</summary>
     public static void MapSyncRuns(this RouteGroupBuilder api)
     {
-        var routes = api.MapGroup("/projects/{projectId:guid}/sync-runs").RequireAuthorization();
-        routes.MapGet("", List).Produces<SyncRunList>().Produces(401).Produces(404).ProducesProblem(503);
-        routes.MapGet("/{runId:guid}", Get).Produces<SyncRunSummary>().Produces(401).Produces(404).ProducesProblem(503);
+        var routes = api.MapGroup("/projects/{projectId:guid}/sync-runs");
+        routes.MapGet("", List).Produces<SyncRunList>().Produces(404).ProducesProblem(503);
+        routes.MapGet("/{runId:guid}", Get).Produces<SyncRunSummary>().Produces(404).ProducesProblem(503);
     }
 
     /// <summary>Shows up to 100 newest recorded attempts for an owned project.</summary>
-    private static Task<IResult> List(Guid projectId, ClaimsPrincipal actor, DevPrismDbContext db,
-        IConfiguration configuration, CancellationToken ct) => Read(projectId, null, actor, db, configuration, ct);
+    private static Task<IResult> List(Guid projectId, DevPrismDbContext db,
+        IConfiguration configuration, CancellationToken ct) => Read(projectId, null, db, configuration, ct);
 
     /// <summary>Returns a single run only from the owned project named in the path.</summary>
-    private static Task<IResult> Get(Guid projectId, Guid runId, ClaimsPrincipal actor, DevPrismDbContext db,
-        IConfiguration configuration, CancellationToken ct) => Read(projectId, runId, actor, db, configuration, ct);
+    private static Task<IResult> Get(Guid projectId, Guid runId, DevPrismDbContext db,
+        IConfiguration configuration, CancellationToken ct) => Read(projectId, runId, db, configuration, ct);
 
     /// <summary>Applies the project ownership check before querying persisted local status.</summary>
-    private static async Task<IResult> Read(Guid projectId, Guid? runId, ClaimsPrincipal actor,
+    private static async Task<IResult> Read(Guid projectId, Guid? runId,
         DevPrismDbContext db, IConfiguration configuration, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(configuration.GetConnectionString("DevPrism"))) return Unavailable();
-        var ownerId = Guid.Parse(actor.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var ownerId = LocalWorkspace.OperatorId;
         try
         {
             if (!await db.Projects.AnyAsync(row => row.Id == projectId && row.OwnerId == ownerId, ct))
