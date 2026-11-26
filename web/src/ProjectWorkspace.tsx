@@ -1,10 +1,12 @@
 // Spec: Documentation/dev-prism-ai-specs/03_UI_UX_SPEC.md and 11_API_AND_EVENTS.md.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { FormEvent } from 'react'
+import { type FormEvent, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router'
 import { SyncHistory } from './SyncHistory'
 import { FeatureWorkspace } from './FeatureWorkspace'
-import { ContextCard, EmptyState, Icon, PageIntro, ProviderConnections, SourceContext, WorkspaceColumns, WorkspaceFrame, type ProjectOption, type WorkspaceHealth } from './WorkspaceUi'
+import { ProviderConnections } from './ProviderConnections'
+import { McpProfilesPanel } from './McpSettings'
+import { ContextCard, CreateDialog, EmptyState, Icon, PageIntro, SourceContext, WorkspaceColumns, WorkspaceFrame, type ProjectOption, type WorkspaceHealth } from './WorkspaceUi'
 
 type Project = ProjectOption & { version: number }
 type ProjectList = { items: Project[] }
@@ -27,6 +29,12 @@ export function ProjectWorkspace({ health }: { health: WorkspaceHealth }) {
     <Routes>
       <Route path="/" element={<Navigate to="/projects" replace />} />
       <Route path="/projects" element={<WorkspaceFrame {...frame}><ProjectPicker projects={projects} /></WorkspaceFrame>} />
+      <Route path="/settings/mcp" element={<WorkspaceFrame {...frame}>
+        <PageIntro eyebrow="Settings / Integrations" title="MCP" accent="profiles" description="Manage the default MCP server for each provider." hero />
+        <WorkspaceColumns context={<ContextCard title="Local sign-in" icon="info"><p>Profiles are shared through the configured database. Sign-in and connection status belong to this running app on this PC. Remote provider writes and imports are not enabled.</p></ContextCard>}>
+          <McpProfilesPanel />
+        </WorkspaceColumns>
+      </WorkspaceFrame>} />
       <Route path="/projects/:projectId/features/:featureId" element={<ProjectView frame={frame} />} />
       <Route path="/projects/:projectId/:section?" element={<ProjectView frame={frame} />} />
       <Route path="*" element={<WorkspaceFrame {...frame}>
@@ -39,6 +47,7 @@ export function ProjectWorkspace({ health }: { health: WorkspaceHealth }) {
 function ProjectPicker({ projects }: { projects: { data?: ProjectList; isSuccess: boolean; isPending: boolean; error: Error | null } }) {
   const client = useQueryClient()
   const navigate = useNavigate()
+  const [creating, setCreating] = useState(false)
   const create = useMutation({
     mutationFn: (fields: { name: string; slug: string }) => readJson<Project>(api, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields),
@@ -58,8 +67,12 @@ function ProjectPicker({ projects }: { projects: { data?: ProjectList; isSuccess
   return (
     <>
       <PageIntro eyebrow="Workspace / Projects" title="Project" accent="workspace" description="Organize work by feature, record decisions, and see which sources are available." hero
-        action={projects.isSuccess ? <a className="button button-primary" href="#new-project"><Icon name="plus" /> New project</a> : undefined} />
-      <WorkspaceColumns context={<><SourceContext /><ContextCard title="Where data lives" icon="database"><p>Projects, features and decisions are saved in the local PostgreSQL database. Creating a project does not contact any provider.</p></ContextCard></>}>
+        action={projects.isSuccess ? <button type="button" className="button button-primary" aria-haspopup="dialog" onClick={(event) => {
+          event.currentTarget.focus()
+          create.reset()
+          setCreating(true)
+        }}><Icon name="plus" /> New project</button> : undefined} />
+      <WorkspaceColumns context={<><SourceContext /><ContextCard title="Where data lives" icon="database"><p>Projects, features and decisions are saved in the configured PostgreSQL database. Creating a project does not contact Azure DevOps or Figma.</p></ContextCard></>}>
         <section className="panel" aria-labelledby="local-projects-title">
           <div className="panel-heading"><span className="icon-tile"><Icon name="grid" /></span><div><h2 id="local-projects-title">Local projects</h2><p>Select a project to open its workspace.</p></div></div>
           {projects.isPending ? <p role="status">Loading projects…</p> : null}
@@ -71,18 +84,15 @@ function ProjectPicker({ projects }: { projects: { data?: ProjectList; isSuccess
             </li>)}
           </ul> : null}
         </section>
-        {projects.isSuccess ? <section className="panel" id="new-project" aria-labelledby="new-project-title" tabIndex={-1}>
-          <div className="panel-heading"><span className="icon-tile"><Icon name="plus" /></span><div><h2 id="new-project-title">Create a project</h2><p>Give the workspace a name and a short, unique slug.</p></div></div>
-          <form onSubmit={submit}>
-            <div className="field-grid">
-              <div className="form-field"><label htmlFor="project-name">Project name</label><input id="project-name" name="name" required maxLength={160} /></div>
-              <div className="form-field"><label htmlFor="project-slug">Project slug</label><input id="project-slug" name="slug" required maxLength={80} placeholder="e.g. dishrate" /></div>
-            </div>
-            <button type="submit" className="button button-primary" disabled={create.isPending}><Icon name="plus" />{create.isPending ? 'Creating project…' : 'Create project'}</button>
-            {create.isError ? <p className="notice error" role="alert">{create.error.message}</p> : null}
-          </form>
-        </section> : null}
       </WorkspaceColumns>
+      {creating ? <CreateDialog title="Create a project" description="Give the workspace a name and a short, unique slug."
+        submitLabel="Create project" pendingLabel="Creating project…" pending={create.isPending} error={create.error}
+        onSubmit={submit} onDismiss={() => setCreating(false)}>
+        <div className="field-grid">
+          <div className="form-field"><label htmlFor="project-name">Project name</label><input id="project-name" name="name" required maxLength={160} /></div>
+          <div className="form-field"><label htmlFor="project-slug">Project slug</label><input id="project-slug" name="slug" required maxLength={80} placeholder="e.g. dishrate" /></div>
+        </div>
+      </CreateDialog> : null}
     </>
   )
 }
@@ -111,9 +121,11 @@ function ProjectView({ frame }: { frame: { health: WorkspaceHealth; projects?: P
         </WorkspaceColumns>
       </> : null}
       {current === 'connections' ? <>
-        <PageIntro eyebrow="Project / Sources" title="Provider" accent="connections" description="Read availability for the sources planned for this project." />
-        <WorkspaceColumns context={<ContextCard title="Provider access" icon="info"><p>Provider authorization is separate from the local workspace. This build does not expose OAuth or import controls.</p></ContextCard>}>
-          <ProviderConnections />
+        <PageIntro eyebrow="Project / Sources" title="MCP" accent="connections" description="Use the global MCP profiles or override them for this project. Save resource links separately." />
+        <WorkspaceColumns context={<ContextCard title="Links and provider access" icon="info"><p>Connecting to MCP does not verify access to every resource. Save a work item or frame link and use Check source to verify it without importing content.</p><Link className="text-link" to="/settings/mcp">Global MCP settings <Icon name="arrow" /></Link></ContextCard>}>
+          <McpProfilesPanel projectId={project.data.id} />
+          <h2>Project source links</h2>
+          <ProviderConnections projectId={project.data.id} />
         </WorkspaceColumns>
       </> : null}
       {!['features', 'sync', 'connections'].includes(current) ? <PageIntro eyebrow="Project" title="Section unavailable" description="Use the workspace menu to continue." /> : null}

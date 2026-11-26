@@ -193,6 +193,53 @@ namespace DevPrism.Infrastructure.Persistence.Migrations
                     b.ToTable("features", (string)null);
                 });
 
+            modelBuilder.Entity("DevPrism.Infrastructure.Persistence.McpProfileRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
+
+                    b.Property<string>("Endpoint")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("endpoint");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("provider");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Provider")
+                        .IsUnique()
+                        .HasFilter("project_id IS NULL");
+
+                    b.HasIndex("ProjectId", "Provider")
+                        .IsUnique()
+                        .HasFilter("project_id IS NOT NULL");
+
+                    b.ToTable("mcp_profiles", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_mcp_profiles_provider", "provider IN ('AzureDevOpsBoards','Figma')");
+                        });
+                });
+
             modelBuilder.Entity("DevPrism.Infrastructure.Persistence.ProjectRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -337,6 +384,14 @@ namespace DevPrism.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DevPrism.Infrastructure.Persistence.McpProfileRecord", b =>
+                {
+                    b.HasOne("DevPrism.Infrastructure.Persistence.ProjectRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("DevPrism.Infrastructure.Persistence.SyncRunRecord", b =>

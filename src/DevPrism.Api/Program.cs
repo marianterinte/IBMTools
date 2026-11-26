@@ -2,12 +2,15 @@
 // Composition root for the loopback API and packaged React application.
 using DevPrism.Api.Features;
 using DevPrism.Api.Local;
+using DevPrism.Api.Mcp;
 using DevPrism.Api.Projects;
 using DevPrism.Api.Sync;
 using DevPrism.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+// OAuth callback queries can contain a one-time code. Do not log request URLs.
+builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = 64 * 1024;
@@ -19,6 +22,9 @@ builder.Services.AddDbContext<DevPrismDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DevPrism")));
 builder.Services.AddHostedService<SyncRunRecovery>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<McpSessionState>();
+builder.Services.AddSingleton<FigmaCredentials>();
+builder.Services.AddSingleton<McpAuthorization>();
 
 var app = builder.Build();
 app.UseExceptionHandler();
@@ -28,6 +34,12 @@ app.UseStaticFiles();
 
 var api = app.MapGroup("/api/v1");
 api.MapProjects();
+api.MapSourceSelections();
+api.MapMcp();
+api.MapFigmaCredentials();
+api.MapPost("/mcp/figma-desktop/check", FigmaDesktopCheck.Run)
+    .Produces<FigmaDesktopCheck.Observation>().ProducesProblem(409);
+McpOperations.MapCallbacks(app);
 api.MapFeatures();
 api.MapDecisions();
 api.MapSyncRuns();

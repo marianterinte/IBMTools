@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { DecisionHighlights, DecisionMemory } from './DecisionMemory'
-import { Badge, ContextCard, EmptyState, Icon, PageIntro, SourceContext, WorkspaceColumns } from './WorkspaceUi'
+import { Badge, ContextCard, CreateDialog, EmptyState, Icon, PageIntro, SourceContext, WorkspaceColumns } from './WorkspaceUi'
 
 type Feature = { id: string; key: string; name: string; description: string; version: number }
 type FeatureList = { items: Feature[]; truncated: boolean }
@@ -37,6 +37,7 @@ function FeatureListView({ projectId, page, api }: {
   const navigate = useNavigate()
   const client = useQueryClient()
   const [search, setSearch] = useState('')
+  const [creating, setCreating] = useState(false)
   const key = ['project', projectId, 'features'] as const
   const features = useQuery({
     queryKey: [...key, search],
@@ -77,7 +78,11 @@ function FeatureListView({ projectId, page, api }: {
   return (
     <>
       <PageIntro eyebrow="Project / Features" title="Feature" accent="explorer" description="Keep local features and the decisions behind them in one place." hero
-        action={<a className="button button-primary" href="#new-feature"><Icon name="plus" /> New feature</a>} />
+        action={<button type="button" className="button button-primary" aria-haspopup="dialog" onClick={(event) => {
+          event.currentTarget.focus()
+          create.reset()
+          setCreating(true)
+        }}><Icon name="plus" /> New feature</button>} />
       <WorkspaceColumns context={<>
         <SourceContext connectionPath={`${base}/connections`} />
         <ContextCard title="Decision memory" icon="book"><p>Open a feature to draft an operator decision, review its exact wording, and approve it locally.</p></ContextCard>
@@ -93,7 +98,7 @@ function FeatureListView({ projectId, page, api }: {
           </form>
           {features.isPending ? <p role="status">Loading features…</p> : null}
           {features.isError ? <p className="notice error" role="alert">{features.error.message}</p> : null}
-          {features.isSuccess && features.data.items.length === 0 ? <EmptyState title={search ? 'No matching features' : 'No local features yet'}>{search ? 'Try a different name or key.' : 'Create a feature below to start recording its decisions.'}</EmptyState> : null}
+          {features.isSuccess && features.data.items.length === 0 ? <EmptyState title={search ? 'No matching features' : 'No local features yet'}>{search ? 'Try a different name or key.' : 'Select New feature to start recording its decisions.'}</EmptyState> : null}
           {features.isSuccess && features.data.items.length > 0 ? <ul className="entity-list" aria-label="Local features">
             {features.data.items.map((feature) => <li key={feature.id}>
               <Link className="entity-link" to={`${page}/${feature.id}`}><span className="icon-tile"><Icon name="layers" /></span><span className="entity-label"><strong>{feature.name}</strong><small>{feature.key}</small></span><Icon name="chevron" /></Link>
@@ -101,19 +106,16 @@ function FeatureListView({ projectId, page, api }: {
           </ul> : null}
           {features.data?.truncated ? <p className="notice">Showing the first 100 matches. Narrow your search for more specific results.</p> : null}
         </section>
-        <section className="panel" id="new-feature" tabIndex={-1} aria-labelledby="new-feature-title">
-          <div className="panel-heading"><span className="icon-tile"><Icon name="plus" /></span><div><h2 id="new-feature-title">Create a feature</h2><p>A local record; no provider operation is triggered.</p></div></div>
-          <form onSubmit={submit}>
-            <div className="field-grid">
-              <div className="form-field"><label htmlFor="feature-name">Name</label><input id="feature-name" name="name" required maxLength={160} /></div>
-              <div className="form-field"><label htmlFor="feature-key">Key</label><input id="feature-key" name="key" required maxLength={80} placeholder="e.g. dish-rating" /></div>
-            </div>
-            <div className="form-field"><label htmlFor="feature-description">Description <span>(optional)</span></label><textarea id="feature-description" name="description" maxLength={2000} rows={3} /></div>
-            <button type="submit" className="button button-primary" disabled={create.isPending}><Icon name="plus" />{create.isPending ? 'Creating feature…' : 'Create feature'}</button>
-            {create.isError ? <p className="notice error" role="alert">{create.error.message}</p> : null}
-          </form>
-        </section>
       </WorkspaceColumns>
+      {creating ? <CreateDialog title="Create a feature" description="A local record; no provider operation is triggered."
+        submitLabel="Create feature" pendingLabel="Creating feature…" pending={create.isPending} error={create.error}
+        onSubmit={submit} onDismiss={() => setCreating(false)}>
+        <div className="field-grid">
+          <div className="form-field"><label htmlFor="feature-name">Name</label><input id="feature-name" name="name" required maxLength={160} /></div>
+          <div className="form-field"><label htmlFor="feature-key">Key</label><input id="feature-key" name="key" required maxLength={80} placeholder="e.g. dish-rating" /></div>
+        </div>
+        <div className="form-field"><label htmlFor="feature-description">Description <span>(optional)</span></label><textarea id="feature-description" name="description" maxLength={2000} rows={3} /></div>
+      </CreateDialog> : null}
     </>
   )
 }

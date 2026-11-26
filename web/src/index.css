@@ -13,14 +13,29 @@
   --text: #f0eff9;
   --muted: #a8aec7;
   --accent: #c3a9ff;
+  --selection: #543682;
   --good: #7ce5b6;
   --warning: #f6c790;
   --radius: 16px;
 }
 
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f3f7fc;
+  --surface: #fff;
+  --surface-low: #f6f9ff;
+  --line: #cbd9ea;
+  --text: #162b45;
+  --muted: #4e627b;
+  --accent: #1756ac;
+  --selection: #1f5caf;
+  --good: #176345;
+  --warning: #794713;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; min-width: 0; }
+body { margin: 0; min-width: 0; background: var(--bg); color: var(--text); }
 button, input, textarea, select { font: inherit; }
 a { color: var(--accent); }
-:focus-visible { outline: 2px solid #c3a9ff; outline-offset: 3px; }
-::selection { color: #fff; background: #543682; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+::selection { color: #fff; background: var(--selection); }

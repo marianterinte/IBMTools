@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, type FormEvent, type ReactNode } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router'
+import { ThemeToggle } from './ThemeToggle'
 
 const icons = {
   prism: 'M12 2 3 7v10l9 5 9-5V7L12 2Z M3 7l9 5 9-5 M12 12v10 M7.5 4.5l9 5v10',
@@ -65,6 +66,7 @@ export function WorkspaceFrame({ health, projects = [], project, projectsLoading
           {project ? sections.map(([section, label, icon]) => (
             <NavLink key={section} to={`/projects/${project.id}/${section}`}><Icon name={icon} />{label}</NavLink>
           )) : null}
+          <NavLink to="/settings/mcp"><Icon name="plug" /> MCP settings</NavLink>
         </nav>
         <div className="sidebar-footer"><span className="marker" aria-hidden="true" /> <span>Local workspace<small>Single operator</small></span></div>
       </aside>
@@ -76,6 +78,7 @@ export function WorkspaceFrame({ health, projects = [], project, projectsLoading
           </div>
           <div className="topbar-status">
             {project ? <Link className="source-short" to={`/projects/${project.id}/connections`} aria-label="View Azure DevOps and Figma availability"><Icon name="plug" /><span>Sources</span></Link> : null}
+            <ThemeToggle />
             <span role="status"><Badge tone={health.tone}>{health.label}</Badge></span>
             <button className="icon-button" type="button" aria-label="Check database status" title="Check database status" disabled={health.checking} onClick={health.refresh}><Icon name="refresh" /></button>
           </div>
@@ -112,6 +115,47 @@ export function PageIntro({ eyebrow, title, accent, description, action, hero }:
   )
 }
 
+/** A mounted form opens modally and uses the browser's focus and background isolation. */
+export function CreateDialog({ title, description, submitLabel, pendingLabel, pending, error, onSubmit, onDismiss, children }: {
+  title: string; description: string; submitLabel: string; pendingLabel: string; pending: boolean; error: Error | null
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void; onDismiss: () => void; children: ReactNode
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const titleId = useId()
+  const descriptionId = useId()
+
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    dialog.showModal()
+    return () => dialog.close()
+  }, [])
+
+  return (
+    <dialog ref={dialogRef} className="panel create-dialog" aria-labelledby={titleId} aria-describedby={descriptionId}
+      onCancel={(event) => {
+        event.preventDefault()
+        if (!pending) onDismiss()
+      }}>
+      <div className="panel-heading">
+        <span className="icon-tile"><Icon name="plus" /></span>
+        <div><h2 id={titleId}>{title}</h2><p id={descriptionId}>{description}</p></div>
+      </div>
+      <form onSubmit={(event) => {
+        if (pending) event.preventDefault()
+        else onSubmit(event)
+      }}>
+        {children}
+        {error ? <p className="notice error" role="alert">{error.message}</p> : null}
+        <div className="create-dialog-actions">
+          <button type="button" className="button button-secondary" disabled={pending} onClick={onDismiss}>Cancel</button>
+          <button type="submit" className="button button-primary" disabled={pending}><Icon name="plus" />{pending ? pendingLabel : submitLabel}</button>
+        </div>
+      </form>
+    </dialog>
+  )
+}
+
 export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'good' | 'warning' | 'neutral' | 'accent' }) {
   return <span className={`badge badge-${tone}`}><span aria-hidden="true" />{children}</span>
 }
@@ -129,24 +173,17 @@ const sources = [
   { name: 'Figma', area: 'Design frame context', icon: 'design' },
 ] as const
 
-export function ProviderConnections() {
-  return sources.map((source) => <section className="panel" key={source.name}>
-    <div className="panel-heading"><span className="icon-tile"><Icon name={source.icon} /></span><div><h2>{source.name}</h2><p>{source.area}</p></div><Badge>Not available</Badge></div>
-    <p className="notice">Remote MCP reads are not enabled in this build.</p>
-  </section>)
-}
-
 export function SourceContext({ connectionPath }: { connectionPath?: string }) {
   return (
     <ContextCard title="Source availability" icon="plug">
       <div className="source-list">
         {sources.map((source) => <div className="source-row" key={source.name}>
           <span className="icon-tile"><Icon name={source.icon} /></span>
-          <div><strong>{source.name}</strong><small>Not available</small></div>
+          <div><strong>{source.name}</strong><small>{source.area}</small></div>
         </div>)}
       </div>
-      <p>Remote MCP reads are not enabled in this build.</p>
-      {connectionPath ? <Link className="text-link" to={connectionPath}>View connections <Icon name="arrow" /></Link> : null}
+      <p>Check the connection and individual source links manually. Saving a link does not import content.</p>
+      <Link className="text-link" to={connectionPath ?? '/settings/mcp'}>{connectionPath ? 'View connections' : 'MCP settings'} <Icon name="arrow" /></Link>
     </ContextCard>
   )
 }

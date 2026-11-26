@@ -21,6 +21,8 @@ public sealed class DevPrismDbContext(DbContextOptions<DevPrismDbContext> option
     /// <summary>Returns local decision history scoped by project and feature.</summary>
     public DbSet<DecisionVersionRecord> Decisions => Set<DecisionVersionRecord>();
 
+    public DbSet<McpProfileRecord> McpProfiles => Set<McpProfileRecord>();
+
     /// <summary>Defines stable IDs, provider scope keys, and optimistic concurrency.</summary>
     /// <param name="modelBuilder">The EF Core schema builder.</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -50,6 +52,20 @@ public sealed class DevPrismDbContext(DbContextOptions<DevPrismDbContext> option
         connection.HasIndex(row => new { row.ProjectId, row.Provider, row.ScopeKey }).IsUnique();
         connection.HasOne<ProjectRecord>().WithMany().HasForeignKey(row => row.ProjectId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        var profile = modelBuilder.Entity<McpProfileRecord>();
+        profile.ToTable("mcp_profiles", table => table.HasCheckConstraint("ck_mcp_profiles_provider",
+            "provider IN ('AzureDevOpsBoards','Figma')"));
+        profile.HasKey(row => row.Id);
+        profile.Property(row => row.Id).HasColumnName("id");
+        profile.Property(row => row.ProjectId).HasColumnName("project_id");
+        profile.Property(row => row.Provider).HasColumnName("provider").HasMaxLength(32);
+        profile.Property(row => row.Endpoint).HasColumnName("endpoint").HasMaxLength(255);
+        profile.Property(row => row.Enabled).HasColumnName("enabled");
+        profile.Property(row => row.Version).HasColumnName("version").IsConcurrencyToken();
+        profile.HasIndex(row => row.Provider).HasFilter("project_id IS NULL").IsUnique();
+        profile.HasIndex(row => new { row.ProjectId, row.Provider }).HasFilter("project_id IS NOT NULL").IsUnique();
+        profile.HasOne<ProjectRecord>().WithMany().HasForeignKey(row => row.ProjectId).OnDelete(DeleteBehavior.Cascade);
 
         ConfigureSyncRuns(modelBuilder);
         ConfigureFeatures(modelBuilder);
